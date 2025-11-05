@@ -19,11 +19,11 @@ export const dockerDown = createServerFn().handler(async () => {
   return result.text()
 })
 
-export const dockerStatus = createServerFn().handler(async function* ({
-  signal,
-}) {
+export const dockerStatus = createServerFn().handler(async function* () {
+  let count = 0
   // signal.aborted is not working: https://github.com/TanStack/router/issues/4651
-  while (!signal.aborted) {
+  // while (!signal.aborted) {
+  while (count++ < 3) {
     const result = await Bun.$`docker compose ps --format json`
     if (result.exitCode !== 0) {
       throw new Error('Failed to get docker compose status')
@@ -84,6 +84,11 @@ function Home() {
         signal: controller.signal,
       })) {
         setDockerStatusResult(msg)
+      }
+
+      if (!controller.signal.aborted) {
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+        void dockerStatusStream()
       }
     }
 
