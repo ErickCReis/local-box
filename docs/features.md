@@ -1,29 +1,23 @@
-# Features / System
+# Features Overview
 
-## Workspaces
-- Create a workspace; the current machine becomes a host and the creator is the **owner**.
-- A workspace requires at least one active host to function.
-- Invite users by email/link; owner/admins can manage membership.
+Start with the MVP, then iterate. See:
+- MVP: `./mvp.md`
+- Roadmap (post-MVP): `./roadmap.md`
+- Paid features: `./paid.md`
+- Infra: `./infra.md`
+- Modes (host/client): `./modes.md`
 
-## Roles & Access
-- **Owner**: Admin privileges; can grant admin to others.
-- **Admin**: Manage folders/files and access policies.
-- **Member**: Access as granted.
-- Access control per folder/file targeting users within the workspace.
+## Core Concepts
+- Workspaces: Created by an owner; require at least one active host.
+- Host & Proxy: A host exposes a secure proxy URL for clients.
+- Files & Folders: Upload/download, organize, and manage content.
+- Roles: Owner and members in MVP; admins and fine-grained ACLs later.
 
-## Files & Folders
-- Admins can create folders and upload files.
-- Assign permissions to users (view/edit/manage).
-- Show where each file lives (single host vs replicated across hosts).
+## Sponsors (where they fit)
+- TanStack Start: Web app framework for UI and routes.
+- Netlify: Hosts the web-only client.
+- Convex (self-hosted): Realtime sync and file storage.
+- Cloudflare: Secure proxy access to host machines.
+- Autumn: Entitlements for paid features.
 
-## Proxy-based Access
-- Hosts generate a proxy URL; clients use it to access the workspace.
-- Hosts can rotate/revoke URLs.
-
-## Redundancy & Visibility
-- As a host, connect to other hosts to replicate selected folders/files.
-- UI clearly displays per-file location and replication state.
-
-## Notes
-- Self-hosted Convex powers sync, database, and file storage.
-- Reference: `https://raw.githubusercontent.com/get-convex/convex-backend/refs/heads/main/self-hosted/README.md`
+For complete MVP scope, acceptance criteria, and non-goals, see `./mvp.md`.
