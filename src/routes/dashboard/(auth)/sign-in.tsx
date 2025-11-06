@@ -5,13 +5,14 @@ import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { authClient } from '@/lib/auth-client'
 
-export const Route = createFileRoute('/(auth)/sign-in')({
+export const Route = createFileRoute('/dashboard/(auth)/sign-in')({
   component: RouteComponent,
+  loader: ({ context }) => context,
 })
 
 function RouteComponent() {
+  const { hostUrl, authClient } = Route.useRouteContext()
   const navigate = useNavigate()
 
   const form = useForm({
@@ -27,7 +28,7 @@ function RouteComponent() {
         },
         {
           onSuccess: () => {
-            navigate({ to: '/' })
+            navigate({ to: '/dashboard' })
             toast.success('Sign in successful')
           },
           onError: (error) => {
@@ -45,8 +46,19 @@ function RouteComponent() {
   })
 
   return (
-    <div className="mx-auto w-full mt-10 max-w-md p-6">
-      <h1 className="mb-6 text-center text-3xl font-bold">Welcome Back</h1>
+    <div className="mx-auto w-full  max-w-md p-6">
+      <h1 className="mb-2 text-center text-3xl font-bold">Welcome Back</h1>
+
+      <p className="mb-6 text-center text-sm text-muted-foreground">
+        Host: <span className="font-medium">{hostUrl}</span>{' '}
+        <Button
+          variant="link"
+          className="px-1"
+          onClick={() => navigate({ to: '/enter-host' })}
+        >
+          Change
+        </Button>
+      </p>
 
       <form
         onSubmit={(e) => {
@@ -120,7 +132,7 @@ function RouteComponent() {
           variant="link"
           className="text-indigo-600 hover:text-indigo-800"
         >
-          <Link to="/sign-up">Need an account? Sign Up</Link>
+          <Link to="/dashboard/sign-up">Need an account? Sign Up</Link>
         </Button>
       </div>
     </div>

@@ -6,26 +6,31 @@ import { query } from './_generated/server'
 import type { DataModel } from './_generated/dataModel'
 import type { GenericCtx } from '@convex-dev/better-auth'
 
-const siteUrl = process.env.SITE_URL!
-
 export const authComponent = createClient<DataModel>(components.betterAuth)
 
 export function createAuth(
   ctx: GenericCtx<DataModel>,
   { optionsOnly }: { optionsOnly?: boolean } = { optionsOnly: false },
 ) {
+  const siteUrl = 'http://localhost:3000'
+  const secret = process.env.BETTER_AUTH_SECRET!
+
   return betterAuth({
     logger: {
       disabled: optionsOnly,
     },
     baseURL: siteUrl,
-    trustedOrigins: [siteUrl],
+    trustedOrigins: [
+      siteUrl,
+      'https://local-box-6b469c63-59dc-4918-b390-70ab49b296ec.loca.lt',
+    ],
+
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,
       requireEmailVerification: false,
     },
-    secret: process.env.BETTER_AUTH_SECRET,
+    secret,
     plugins: [convex()],
   })
 }

@@ -5,10 +5,9 @@ export default defineSchema({
   userProfiles: defineTable({
     userId: v.string(), // better-auth user ID
     role: v.union(v.literal('owner'), v.literal('admin'), v.literal('member')),
-    createdAt: v.number(),
-    updatedAt: v.number(),
   }).index('by_user', ['userId']),
   workspaces: defineTable({
     name: v.string(),
+    ownerId: v.string(),
   }),
 })
