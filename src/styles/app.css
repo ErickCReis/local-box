@@ -6,7 +6,11 @@
 @layer base {
   html,
   body {
-    @apply text-gray-900 bg-gray-50 dark:bg-gray-950 dark:text-gray-200;
+    @apply bg-background text-foreground;
+  }
+
+  * {
+    @apply border-border outline-ring/50;
   }
 
   .using-mouse * {
@@ -119,13 +123,4 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
-}
-
-@layer base {
-  * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
 }

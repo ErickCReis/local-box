@@ -20,11 +20,7 @@ export function createAuth(
       disabled: optionsOnly,
     },
     baseURL: siteUrl,
-    trustedOrigins: [
-      siteUrl,
-      'https://local-box-6b469c63-59dc-4918-b390-70ab49b296ec.loca.lt',
-    ],
-
+    trustedOrigins: [siteUrl],
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,

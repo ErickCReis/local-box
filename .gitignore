@@ -9,6 +9,7 @@ node_modules
 .output
 .nitro
 .tanstack
+.local-box
 
 /build/
 /api/

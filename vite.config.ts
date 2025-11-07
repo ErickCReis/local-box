@@ -8,12 +8,19 @@ import { nitro } from 'nitro/vite'
 export default defineConfig({
   server: {
     port: 3000,
+    allowedHosts: ['.trycloudflare.com'],
+    proxy: {},
   },
   plugins: [
     tailwindcss(),
     tsConfigPaths(),
     tanstackStart(),
-    nitro({ config: { preset: 'bun' } }),
+    nitro({
+      config: {
+        preset: 'bun',
+        routeRules: { '/convex/*': { proxy: 'http://localhost:3210' } },
+      },
+    }),
     viteReact(),
   ],
 })

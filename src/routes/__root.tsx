@@ -57,7 +57,7 @@ function RootComponent() {
       <head>
         <HeadContent />
       </head>
-      <body className="h-svh w-full antialiased">
+      <body className="min-h-screen antialiased">
         <ThemeProvider />
         <Outlet />
         <Scripts />

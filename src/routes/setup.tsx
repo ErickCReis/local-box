@@ -1,103 +1,94 @@
-import { useEffect, useMemo, useState } from 'react'
+import { existsSync } from 'node:fs'
+import { useEffect, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { createFileRoute } from '@tanstack/react-router'
 import { createServerFn, useServerFn } from '@tanstack/react-start'
-import localtunnel from 'localtunnel'
+import { Tunnel, bin, install } from 'cloudflared'
+import type { TunnelEvents } from 'cloudflared'
 import { Button } from '@/components/ui/button'
+import { getHostStore, setHostStore } from '@/lib/host-store'
+import { DOCKER } from '@/lib/docker'
 
 // --- Server functions ---
-
 export const dockerUp = createServerFn().handler(async () => {
-  const result = await Bun.$`docker compose up -d`
-  if (result.exitCode !== 0) {
-    throw new Error('Failed to start docker compose')
-  }
-  return result.text()
+  return await Bun.$`docker compose up -d`.text()
 })
 
 export const dockerDown = createServerFn().handler(async () => {
-  const result = await Bun.$`docker compose down`
-  if (result.exitCode !== 0) {
-    throw new Error('Failed to stop docker compose')
-  }
-  return result.text()
+  return await Bun.$`docker compose down`.text()
 })
 
-export const dockerStatus = createServerFn().handler(async function* () {
+export const getDockerStatus = createServerFn().handler(async () => {
+  return await DOCKER.getDockerStatus()
+})
+
+export const whatchDockerStatus = createServerFn().handler(async function* () {
   let count = 0
   while (count++ < 3) {
-    const result = await Bun.$`docker compose ps --format json`
-    if (result.exitCode !== 0) {
-      throw new Error('Failed to get docker compose status')
-    }
-    yield result
-      .text()
-      .trim()
-      .split('\n')
-      .filter((line) => line.trim() !== '')
-      .map((line) => {
-        const data = JSON.parse(line)
-        return {
-          ID: data.ID,
-          Name: data.Name,
-          Image: data.Image,
-          Ports: data.Ports,
-          Status: data.Status,
-          State: data.State,
-        }
-      })
+    yield await DOCKER.getDockerStatus()
     await new Promise((resolve) => setTimeout(resolve, 2000))
   }
 })
 
-let __activeTunnel: any = null
-let __activeTunnelUrl: string | null = null
+// --- Quick Tunnel server functions ---
 
-const UUID = crypto.randomUUID()
-
-export const startTunnel = createServerFn().handler(async () => {
-  if (__activeTunnel && __activeTunnelUrl) {
-    return { url: __activeTunnelUrl }
-  }
-
-  const tunnel = await localtunnel({
-    port: 3210,
-    subdomain: `local-box-${UUID}`,
-    host: 'https://loca.lt',
-  })
-
-  __activeTunnel = tunnel
-  __activeTunnelUrl = tunnel.url
-  tunnel.on('close', () => {
-    __activeTunnel = null
-    __activeTunnelUrl = null
-  })
-
-  return { url: __activeTunnelUrl }
+export const getQuickTunnel = createServerFn().handler(async () => {
+  const hostStore = getHostStore()
+  return hostStore.tunnelUrl
 })
 
-export const stopTunnel = createServerFn().handler(async () => {
-  if (__activeTunnel) {
-    try {
-      await __activeTunnel.close()
-    } catch {
-      // ignore
-    }
+export const startQuickTunnel = createServerFn().handler(async () => {
+  const hostStore = getHostStore()
+  if (hostStore.tunnelUrl) {
+    return { url: hostStore.tunnelUrl }
   }
-  __activeTunnel = null
-  __activeTunnelUrl = null
-  return { stopped: true }
+
+  if (!existsSync(bin)) {
+    await install(bin)
+  }
+
+  // Expose the dev server
+  const tunnel = Tunnel.quick('http://localhost:3000')
+  const url = await new Promise<string>((r) => tunnel.once('url', r))
+  await new Promise((resolve) => tunnel.once('connected', resolve))
+
+  const events = ['stdout', 'stderr', 'exit', 'error']
+  for (const event of events) {
+    tunnel.on(event as keyof TunnelEvents, (data: unknown) => {
+      console.log(`tunnel ${event}:`, data)
+    })
+  }
+
+  setHostStore({ tunnel, tunnelUrl: url })
+  return { url }
+})
+
+export const stopQuickTunnel = createServerFn().handler(async () => {
+  const hostStore = getHostStore()
+  const tunnel = hostStore.tunnel
+  if (tunnel) {
+    await tunnel.stop()
+  }
+  setHostStore({ tunnel: null, tunnelUrl: null })
+  return null
 })
 
 // --- Route ---
 
 export const Route = createFileRoute('/setup')({
   component: Setup,
+  loader: async () => {
+    return {
+      dockerStatus: await getDockerStatus(),
+      quickTunnel: await getQuickTunnel(),
+    }
+  },
 })
 
 function Setup() {
-  const [dockerStatusResult, setDockerStatusResult] = useState<Array<any>>([])
-  const [tunnelUrl, setTunnelUrl] = useState<string | null>(null)
+  const { quickTunnel, dockerStatus } = Route.useLoaderData()
+  const [dockerStatusResult, setDockerStatusResult] = useState(dockerStatus)
+  const [publicUrl, setPublicUrl] = useState(quickTunnel)
 
   // Docker actions
   const dockerUpFn = useServerFn(dockerUp)
@@ -113,7 +104,7 @@ function Setup() {
   useEffect(() => {
     const controller = new AbortController()
     async function stream() {
-      for await (const msg of await dockerStatus({
+      for await (const msg of await whatchDockerStatus({
         signal: controller.signal,
       })) {
         setDockerStatusResult(msg)
@@ -127,23 +118,20 @@ function Setup() {
     return () => controller.abort()
   }, [])
 
-  // Tunnel actions
-  const startTunnelFn = useServerFn(startTunnel)
+  // Initial state: nothing to load for quick tunnels
+
+  // Quick tunnel actions
+  const startTunnelFn = useServerFn(startQuickTunnel)
   const startTunnelMutation = useMutation({
     mutationFn: startTunnelFn,
-    onSuccess: (data: { url: string }) => setTunnelUrl(data.url),
+    onSuccess: (res) => setPublicUrl(res.url),
   })
 
-  const stopTunnelFn = useServerFn(stopTunnel)
+  const stopTunnelFn = useServerFn(stopQuickTunnel)
   const stopTunnelMutation = useMutation({
     mutationFn: stopTunnelFn,
-    onSuccess: () => setTunnelUrl(null),
+    onSuccess: () => setPublicUrl(null),
   })
-
-  const canCopy = useMemo(
-    () => typeof navigator !== 'undefined' && !!navigator.clipboard,
-    [],
-  )
 
   return (
     <main className="p-8 flex flex-col gap-6 max-w-3xl mx-auto">
@@ -188,41 +176,37 @@ function Setup() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-medium">Minimal Proxy (localtunnel)</h2>
-        <p className="text-sm text-muted-foreground">
-          Exposes your local port publicly. Defaults to port 5173 (override with
-          <code className="px-1">TUNNEL_PORT</code> env).
-        </p>
+        <h2 className="text-xl font-medium">Public Tunnel</h2>
         <div className="flex gap-2">
           <Button
             onClick={() => startTunnelMutation.mutate({})}
             disabled={startTunnelMutation.isPending}
           >
-            Start Proxy
+            Start Tunnel
           </Button>
           <Button
             variant="secondary"
             onClick={() => stopTunnelMutation.mutate({})}
             disabled={stopTunnelMutation.isPending}
           >
-            Stop Proxy
+            Stop Tunnel
           </Button>
         </div>
-        {tunnelUrl ? (
+        {publicUrl ? (
           <div className="flex items-center gap-2">
-            <span className="font-mono text-sm break-all">{tunnelUrl}</span>
-            {canCopy ? (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => navigator.clipboard.writeText(tunnelUrl)}
-              >
-                Copy
-              </Button>
-            ) : null}
+            <span className="font-mono text-sm break-all">{publicUrl}</span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigator.clipboard.writeText(publicUrl)}
+            >
+              Copy
+            </Button>
           </div>
         ) : (
-          <div className="text-sm text-muted-foreground">Proxy not running</div>
+          <div className="text-sm text-muted-foreground">
+            Tunnel not running
+          </div>
         )}
       </section>
     </main>
