@@ -1,7 +1,7 @@
 export default {
   providers: [
     {
-      domain: process.env.WEB_URL,
+      domain: process.env.CONVEX_SITE_URL,
       applicationID: 'convex',
     },
   ],

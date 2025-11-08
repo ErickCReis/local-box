@@ -17,25 +17,20 @@ function RouteComponent() {
 
   const form = useForm({
     defaultValues: {
-      email: '',
-      password: '',
+      email: 'a@a.com',
+      password: '12345678',
     },
     onSubmit: async ({ value }) => {
-      await authClient.signIn.email(
-        {
-          email: value.email,
-          password: value.password,
-        },
-        {
-          onSuccess: () => {
-            navigate({ to: '/dashboard' })
-            toast.success('Sign in successful')
-          },
+      await authClient.signIn.email({
+        email: value.email,
+        password: value.password,
+        callbackURL: '/dashboard',
+        fetchOptions: {
           onError: (error) => {
             toast.error(error.error.message || error.error.statusText)
           },
         },
-      )
+      })
     },
     validators: {
       onSubmit: z.object({
@@ -50,7 +45,7 @@ function RouteComponent() {
       <h1 className="mb-2 text-center text-3xl font-bold">Welcome Back</h1>
 
       <p className="mb-6 text-center text-sm text-muted-foreground">
-        Host: <span className="font-medium">{hostUrl}</span>{' '}
+        Host: <span className="font-medium">{hostUrl}</span>
         <Button
           variant="link"
           className="px-1"

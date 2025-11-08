@@ -5,6 +5,7 @@ import {
   createRootRouteWithContext,
 } from '@tanstack/react-router'
 import { ThemeProvider } from '@tanstack-themes/react'
+import { Toaster } from 'sonner'
 import type { QueryClient } from '@tanstack/react-query'
 import appCss from '@/styles/app.css?url'
 
@@ -53,14 +54,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootComponent() {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body className="min-h-screen antialiased">
+      <body className="min-h-screen antialiased" suppressHydrationWarning>
         <ThemeProvider />
         <Outlet />
         <Scripts />
+        <Toaster />
       </body>
     </html>
   )

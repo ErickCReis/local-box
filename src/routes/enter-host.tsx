@@ -15,13 +15,13 @@ function RouteComponent() {
   const navigate = useNavigate()
 
   const form = useForm({
-    defaultValues: { hostUrl },
+    defaultValues: { hostUrl: hostUrl ?? 'http://localhost:3000' },
     validators: {
       onSubmit: z.object({ hostUrl: z.url() }),
     },
     onSubmit: ({ value }) => {
       setHostUrl(value.hostUrl)
-      navigate({ to: '/dashboard/sign-up' })
+      navigate({ to: '/dashboard/sign-in' })
     },
   })
 
@@ -49,7 +49,7 @@ function RouteComponent() {
                   id={field.name}
                   name={field.name}
                   placeholder="https://my-host.example.com"
-                  value={field.state.value ?? ''}
+                  value={field.state.value}
                   onBlur={field.handleBlur}
                   onChange={(e) => field.handleChange(e.target.value)}
                 />

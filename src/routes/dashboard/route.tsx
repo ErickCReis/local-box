@@ -1,16 +1,15 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
-import { getCookie } from '@convex-dev/better-auth/client/plugins'
 import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
 import {
   fetchSession,
   getCookieName,
 } from '@convex-dev/better-auth/react-start'
-import { getRequest } from '@tanstack/react-start/server'
+import { getCookie, getRequest } from '@tanstack/react-start/server'
 import { createServerFn } from '@tanstack/react-start'
-import { createAuth } from '@convex/auth'
 import { clientStore } from '@/lib/client-store'
 
-const fetchAuth = createServerFn().handler(async () => {
+const fetchAuth = createServerFn({ method: 'GET' }).handler(async () => {
+  const { createAuth } = await import('@convex/auth')
   const { session } = await fetchSession(getRequest())
   const sessionCookieName = getCookieName(createAuth)
   const token = getCookie(sessionCookieName)

@@ -7,9 +7,17 @@ import { nitro } from 'nitro/vite'
 
 export default defineConfig({
   server: {
-    port: 3000,
+    port: process.env.PORT ? parseInt(process.env.PORT) : 3000,
     allowedHosts: ['.trycloudflare.com'],
     proxy: {},
+    cors: {
+      origin: [
+        'http://localhost:3000',
+        'http://localhost:3001',
+        /.*\.trycloudflare\.com.*/,
+      ],
+      credentials: true,
+    },
   },
   plugins: [
     tailwindcss(),
@@ -18,7 +26,7 @@ export default defineConfig({
     nitro({
       config: {
         preset: 'bun',
-        routeRules: { '/convex/*': { proxy: 'http://localhost:3210' } },
+        // routeRules: { '/convex/*': { proxy: 'http://localhost:3211' } },
       },
     }),
     viteReact(),

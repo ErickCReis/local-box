@@ -1,7 +1,10 @@
 import { QueryClient } from '@tanstack/react-query'
 import { Store, useStore } from '@tanstack/react-store'
 import { ConvexQueryClient } from '@convex-dev/react-query'
-import { convexClient } from '@convex-dev/better-auth/client/plugins'
+import {
+  convexClient,
+  crossDomainClient,
+} from '@convex-dev/better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 import type { AuthClient } from '@convex-dev/better-auth/react'
 
@@ -35,7 +38,10 @@ export function useClientStore() {
 function createClientStore(hostUrl: string) {
   const { queryClient } = clientStore.state
 
-  const convexQueryClient = new ConvexQueryClient(hostUrl)
+  const convexQueryClient = new ConvexQueryClient(hostUrl, {
+    verbose: true,
+    expectAuth: true,
+  })
   queryClient.defaultQueryOptions({
     queryKey: [],
     queryKeyHashFn: convexQueryClient.hashFn(),
@@ -60,10 +66,13 @@ function updateClientStore(hostUrl: string | null) {
 
   window.localStorage.setItem('hostUrl', hostUrl)
 
-  const convexQueryClient = createClientStore(`${hostUrl}/convex`)
+  const convexQueryClient = createClientStore('http://localhost:3210')
 
   const authClient = createAuthClient({
     baseURL: hostUrl,
+    fetchOptions: {
+      credentials: 'include',
+    },
     plugins: [convexClient()],
   })
 

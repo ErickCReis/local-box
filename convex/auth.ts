@@ -1,12 +1,14 @@
 import { createClient } from '@convex-dev/better-auth'
-import { convex } from '@convex-dev/better-auth/plugins'
+import { convex, crossDomain } from '@convex-dev/better-auth/plugins'
 import { betterAuth } from 'better-auth'
 import { components } from './_generated/api'
 import { query } from './_generated/server'
 import type { DataModel } from './_generated/dataModel'
 import type { GenericCtx } from '@convex-dev/better-auth'
 
-export const authComponent = createClient<DataModel>(components.betterAuth)
+export const authComponent = createClient<DataModel>(components.betterAuth, {
+  verbose: true,
+})
 
 export function createAuth(
   ctx: GenericCtx<DataModel>,
@@ -20,7 +22,7 @@ export function createAuth(
       disabled: optionsOnly,
     },
     baseURL: siteUrl,
-    trustedOrigins: [siteUrl],
+    trustedOrigins: [siteUrl, 'http://localhost:3001'],
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,
