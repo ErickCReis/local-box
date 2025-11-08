@@ -1,23 +1,6 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
-import {
-  fetchSession,
-  getCookieName,
-} from '@convex-dev/better-auth/react-start'
-import { getCookie, getRequest } from '@tanstack/react-start/server'
-import { createServerFn } from '@tanstack/react-start'
 import { clientStore } from '@/lib/client-store'
-
-const fetchAuth = createServerFn({ method: 'GET' }).handler(async () => {
-  const { createAuth } = await import('@convex/auth')
-  const { session } = await fetchSession(getRequest())
-  const sessionCookieName = getCookieName(createAuth)
-  const token = getCookie(sessionCookieName)
-  return {
-    user: session?.user,
-    token,
-  }
-})
 
 export const Route = createFileRoute('/dashboard')({
   ssr: false,
@@ -28,14 +11,15 @@ export const Route = createFileRoute('/dashboard')({
       throw redirect({ to: '/enter-host' })
     }
 
-    const { token, user } = await fetchAuth()
-    if (token) {
-      state.convexQueryClient.serverHttpClient?.setAuth(token)
+    const { data } = await state.authClient.getSession()
+
+    if (data?.session.token) {
+      state.convexQueryClient.serverHttpClient?.setAuth(data.session.token)
     }
 
     const context = {
       ...state,
-      user,
+      user: data?.user,
     }
 
     return context

@@ -1,9 +1,10 @@
 import { existsSync } from 'node:fs'
 import { useEffect, useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
-import { createFileRoute } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { createServerFn, useServerFn } from '@tanstack/react-start'
 import { Tunnel, bin, install } from 'cloudflared'
+import { ArrowLeft } from 'lucide-react'
 import type { TunnelEvents } from 'cloudflared'
 import { Button } from '@/components/ui/button'
 import { getHostStore, setHostStore } from '@/lib/host-store'
@@ -75,7 +76,7 @@ export const stopQuickTunnel = createServerFn().handler(async () => {
 
 // --- Route ---
 
-export const Route = createFileRoute('/setup')({
+export const Route = createFileRoute('/(host)/setup')({
   component: Setup,
   loader: async () => {
     return {
@@ -135,7 +136,12 @@ function Setup() {
 
   return (
     <main className="p-8 flex flex-col gap-6 max-w-3xl mx-auto">
-      <h1 className="text-3xl font-semibold">Host Setup</h1>
+      <h1 className="text-3xl font-semibold flex items-center gap-2">
+        <Link to="/">
+          <ArrowLeft />
+        </Link>
+        Host Setup
+      </h1>
 
       <section className="space-y-3">
         <h2 className="text-xl font-medium">Docker Compose</h2>

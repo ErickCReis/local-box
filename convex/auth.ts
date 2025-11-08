@@ -29,6 +29,13 @@ export function createAuth(
       requireEmailVerification: false,
     },
     secret,
+    advanced: {
+      defaultCookieAttributes: {
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'none',
+        partitioned: true,
+      },
+    },
     plugins: [convex()],
   })
 }

@@ -13,7 +13,6 @@ function RouteComponent() {
   const navigate = useNavigate()
   const workspaces = useQuery(api.workspaces.list)
   const testMutation = useMutation(api.workspaces.testMutation)
-  console.log({ workspaces })
   return (
     <main className="p-8">
       <h1 className="text-3xl font-semibold">Dashboard</h1>

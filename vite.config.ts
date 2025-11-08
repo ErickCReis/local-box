@@ -9,7 +9,6 @@ export default defineConfig({
   server: {
     port: process.env.PORT ? parseInt(process.env.PORT) : 3000,
     allowedHosts: ['.trycloudflare.com'],
-    proxy: {},
     cors: {
       origin: [
         'http://localhost:3000',
@@ -23,12 +22,7 @@ export default defineConfig({
     tailwindcss(),
     tsConfigPaths(),
     tanstackStart(),
-    nitro({
-      config: {
-        preset: 'bun',
-        // routeRules: { '/convex/*': { proxy: 'http://localhost:3211' } },
-      },
-    }),
+    nitro({ config: { preset: 'bun' } }),
     viteReact(),
   ],
 })

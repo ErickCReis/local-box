@@ -4,7 +4,6 @@
   "sideEffects": false,
   "type": "module",
   "scripts": {
-    "dev": "bunx convex dev --once && concurrently -r npm:dev:web npm:dev:convex",
     "dev:web": "bun --bun vite dev",
     "dev:convex": "bun convex dev",
     "build": "bun --bun vite build",
