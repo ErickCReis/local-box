@@ -33,44 +33,88 @@ export const whatchDockerStatus = createServerFn().handler(async function* () {
 
 // --- Quick Tunnel server functions ---
 
-export const getQuickTunnel = createServerFn().handler(async () => {
+export const getQuickTunnels = createServerFn().handler(() => {
   const hostStore = getHostStore()
-  return hostStore.tunnelUrl
+  return {
+    tunnelApi: hostStore.tunnelUrlApi,
+    tunnelConvex: hostStore.tunnelUrlConvex,
+  }
 })
 
-export const startQuickTunnel = createServerFn().handler(async () => {
+export const startQuickTunnels = createServerFn().handler(async () => {
   const hostStore = getHostStore()
-  if (hostStore.tunnelUrl) {
-    return { url: hostStore.tunnelUrl }
-  }
 
   if (!existsSync(bin)) {
     await install(bin)
   }
 
-  // Expose the dev server
-  const tunnel = Tunnel.quick('http://localhost:3000')
-  const url = await new Promise<string>((r) => tunnel.once('url', r))
-  await new Promise((resolve) => tunnel.once('connected', resolve))
-
   const events = ['stdout', 'stderr', 'exit', 'error']
-  for (const event of events) {
-    tunnel.on(event as keyof TunnelEvents, (data: unknown) => {
-      console.log(`tunnel ${event}:`, data)
-    })
+  let tunnelApi: Tunnel | null = hostStore.tunnelApi
+  let urlApi = hostStore.tunnelUrlApi
+  let tunnelConvex: Tunnel | null = hostStore.tunnelConvex
+  let urlConvex = hostStore.tunnelUrlConvex
+
+  // Start API tunnel if not already running
+  if (!urlApi) {
+    tunnelApi = Tunnel.quick('http://localhost:3000')
+    urlApi = await new Promise<string>((r) => tunnelApi!.once('url', r))
+    await new Promise((resolve) => tunnelApi!.once('connected', resolve))
+
+    for (const event of events) {
+      tunnelApi.on(event as keyof TunnelEvents, (data: unknown) => {
+        console.log(`tunnelApi ${event}:`, data)
+      })
+    }
   }
 
-  setHostStore({ tunnel, tunnelUrl: url })
-  return { url }
+  // Start Convex tunnel if not already running
+  if (!urlConvex) {
+    tunnelConvex = Tunnel.quick('http://localhost:3210')
+    urlConvex = await new Promise<string>((r) => tunnelConvex!.once('url', r))
+    await new Promise((resolve) => tunnelConvex!.once('connected', resolve))
+
+    for (const event of events) {
+      tunnelConvex.on(event as keyof TunnelEvents, (data: unknown) => {
+        console.log(`tunnelConvex ${event}:`, data)
+      })
+    }
+  }
+
+  setHostStore({
+    ...getHostStore(),
+    tunnelApi,
+    tunnelUrlApi: urlApi,
+    tunnelConvex,
+    tunnelUrlConvex: urlConvex,
+  })
+
+  return {
+    tunnelApi: urlApi,
+    tunnelConvex: urlConvex,
+  }
 })
 
-export const stopQuickTunnel = createServerFn().handler(async () => {
+export const stopQuickTunnels = createServerFn().handler(async () => {
   const hostStore = getHostStore()
-  const tunnel = hostStore.tunnel
-  if (tunnel) {
-    await tunnel.stop()
+
+  // Stop API tunnel
+  if (hostStore.tunnelApi) {
+    await hostStore.tunnelApi.stop()
   }
-  setHostStore({ tunnel: null, tunnelUrl: null })
+
+  // Stop Convex tunnel
+  if (hostStore.tunnelConvex) {
+    await hostStore.tunnelConvex.stop()
+  }
+
+  setHostStore({
+    ...getHostStore(),
+    tunnelApi: null,
+    tunnelUrlApi: null,
+    tunnelConvex: null,
+    tunnelUrlConvex: null,
+  })
+
   return null
 })
 
@@ -79,17 +123,25 @@ export const stopQuickTunnel = createServerFn().handler(async () => {
 export const Route = createFileRoute('/(host)/setup')({
   component: Setup,
   loader: async () => {
+    const [dockerStatus, quickTunnels] = await Promise.all([
+      getDockerStatus(),
+      getQuickTunnels(),
+    ])
+
     return {
-      dockerStatus: await getDockerStatus(),
-      quickTunnel: await getQuickTunnel(),
+      dockerStatus,
+      quickTunnels,
     }
   },
 })
 
 function Setup() {
-  const { quickTunnel, dockerStatus } = Route.useLoaderData()
+  const { quickTunnels, dockerStatus } = Route.useLoaderData()
   const [dockerStatusResult, setDockerStatusResult] = useState(dockerStatus)
-  const [publicUrl, setPublicUrl] = useState(quickTunnel)
+  const [publicUrlApi, setPublicUrlApi] = useState(quickTunnels.tunnelApi)
+  const [publicUrlConvex, setPublicUrlConvex] = useState(
+    quickTunnels.tunnelConvex,
+  )
 
   // Docker actions
   const dockerUpFn = useServerFn(dockerUp)
@@ -119,19 +171,23 @@ function Setup() {
     return () => controller.abort()
   }, [])
 
-  // Initial state: nothing to load for quick tunnels
-
-  // Quick tunnel actions
-  const startTunnelFn = useServerFn(startQuickTunnel)
-  const startTunnelMutation = useMutation({
-    mutationFn: startTunnelFn,
-    onSuccess: (res) => setPublicUrl(res.url),
+  // Tunnel actions
+  const startTunnelsFn = useServerFn(startQuickTunnels)
+  const startTunnelsMutation = useMutation({
+    mutationFn: startTunnelsFn,
+    onSuccess: (res) => {
+      setPublicUrlApi(res.tunnelApi)
+      setPublicUrlConvex(res.tunnelConvex)
+    },
   })
 
-  const stopTunnelFn = useServerFn(stopQuickTunnel)
-  const stopTunnelMutation = useMutation({
-    mutationFn: stopTunnelFn,
-    onSuccess: () => setPublicUrl(null),
+  const stopTunnelsFn = useServerFn(stopQuickTunnels)
+  const stopTunnelsMutation = useMutation({
+    mutationFn: stopTunnelsFn,
+    onSuccess: () => {
+      setPublicUrlApi(null)
+      setPublicUrlConvex(null)
+    },
   })
 
   return (
@@ -182,38 +238,69 @@ function Setup() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-medium">Public Tunnel</h2>
+        <h2 className="text-xl font-medium">Public Tunnels</h2>
+
         <div className="flex gap-2">
           <Button
-            onClick={() => startTunnelMutation.mutate({})}
-            disabled={startTunnelMutation.isPending}
+            onClick={() => startTunnelsMutation.mutate({})}
+            disabled={startTunnelsMutation.isPending}
           >
-            Start Tunnel
+            Start All Tunnels
           </Button>
           <Button
             variant="secondary"
-            onClick={() => stopTunnelMutation.mutate({})}
-            disabled={stopTunnelMutation.isPending}
+            onClick={() => stopTunnelsMutation.mutate({})}
+            disabled={stopTunnelsMutation.isPending}
           >
-            Stop Tunnel
+            Stop All Tunnels
           </Button>
         </div>
-        {publicUrl ? (
-          <div className="flex items-center gap-2">
-            <span className="font-mono text-sm break-all">{publicUrl}</span>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => navigator.clipboard.writeText(publicUrl)}
-            >
-              Copy
-            </Button>
+
+        <div className="space-y-4">
+          <div className="border rounded p-4 space-y-3">
+            <h3 className="font-medium">API</h3>
+            {publicUrlApi ? (
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm break-all">
+                  {publicUrlApi}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigator.clipboard.writeText(publicUrlApi)}
+                >
+                  Copy
+                </Button>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                Tunnel not running
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="text-sm text-muted-foreground">
-            Tunnel not running
+
+          <div className="border rounded p-4 space-y-3">
+            <h3 className="font-medium">Convex</h3>
+            {publicUrlConvex ? (
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-sm break-all">
+                  {publicUrlConvex}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigator.clipboard.writeText(publicUrlConvex)}
+                >
+                  Copy
+                </Button>
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                Tunnel not running
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </section>
     </main>
   )

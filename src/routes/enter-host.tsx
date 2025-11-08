@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { useForm } from '@tanstack/react-form'
+import { useMutation } from '@tanstack/react-query'
 import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,14 +15,31 @@ function RouteComponent() {
   const { hostUrl, setHostUrl } = useClientStore()
   const navigate = useNavigate()
 
+  const fetchHostMutation = useMutation({
+    mutationFn: async (url: string) => {
+      const response = await fetch(`${url}/api/host`)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch host info: ${response.statusText}`)
+      }
+      const data = await response.json()
+      if (!data.convexUrl) {
+        throw new Error('Host did not return a convex URL')
+      }
+      return { hostUrl: url, convexUrl: data.convexUrl }
+    },
+    onSuccess: ({ hostUrl: url, convexUrl }) => {
+      setHostUrl(url, convexUrl)
+      navigate({ to: '/dashboard/sign-in' })
+    },
+  })
+
   const form = useForm({
     defaultValues: { hostUrl: hostUrl ?? 'http://localhost:3000' },
     validators: {
       onSubmit: z.object({ hostUrl: z.url() }),
     },
     onSubmit: ({ value }) => {
-      setHostUrl(value.hostUrl)
-      navigate({ to: '/dashboard/sign-in' })
+      fetchHostMutation.mutate(value.hostUrl)
     },
   })
 
@@ -63,14 +81,22 @@ function RouteComponent() {
           </form.Field>
         </div>
 
+        {fetchHostMutation.error && (
+          <p className="text-red-500">
+            {fetchHostMutation.error instanceof Error
+              ? fetchHostMutation.error.message
+              : 'Failed to connect to host'}
+          </p>
+        )}
+
         <form.Subscribe>
           {(state) => (
             <Button
               type="submit"
               className="w-full"
-              disabled={!state.canSubmit || state.isSubmitting}
+              disabled={!state.canSubmit || fetchHostMutation.isPending}
             >
-              {state.isSubmitting ? 'Saving…' : 'Continue'}
+              {fetchHostMutation.isPending ? 'Connecting…' : 'Continue'}
             </Button>
           )}
         </form.Subscribe>

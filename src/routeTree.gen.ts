@@ -13,6 +13,7 @@ import { Route as EnterHostRouteImport } from './routes/enter-host'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
+import { Route as ApiHostRouteImport } from './routes/api/host'
 import { Route as hostSetupRouteImport } from './routes/(host)/setup'
 import { Route as DashboardWorkspaceIdRouteRouteImport } from './routes/dashboard/$workspaceId/route'
 import { Route as DashboardWorkspaceIdIndexRouteImport } from './routes/dashboard/$workspaceId/index'
@@ -39,6 +40,11 @@ const DashboardIndexRoute = DashboardIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => DashboardRouteRoute,
+} as any)
+const ApiHostRoute = ApiHostRouteImport.update({
+  id: '/api/host',
+  path: '/api/host',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const hostSetupRoute = hostSetupRouteImport.update({
   id: '/(host)/setup',
@@ -79,6 +85,7 @@ export interface FileRoutesByFullPath {
   '/enter-host': typeof EnterHostRoute
   '/dashboard/$workspaceId': typeof DashboardWorkspaceIdRouteRouteWithChildren
   '/setup': typeof hostSetupRoute
+  '/api/host': typeof ApiHostRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/dashboard/sign-in': typeof DashboardauthSignInRoute
@@ -89,6 +96,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/enter-host': typeof EnterHostRoute
   '/setup': typeof hostSetupRoute
+  '/api/host': typeof ApiHostRoute
   '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/dashboard/sign-in': typeof DashboardauthSignInRoute
@@ -102,6 +110,7 @@ export interface FileRoutesById {
   '/enter-host': typeof EnterHostRoute
   '/dashboard/$workspaceId': typeof DashboardWorkspaceIdRouteRouteWithChildren
   '/(host)/setup': typeof hostSetupRoute
+  '/api/host': typeof ApiHostRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/dashboard/(auth)/sign-in': typeof DashboardauthSignInRoute
@@ -116,6 +125,7 @@ export interface FileRouteTypes {
     | '/enter-host'
     | '/dashboard/$workspaceId'
     | '/setup'
+    | '/api/host'
     | '/dashboard/'
     | '/api/auth/$'
     | '/dashboard/sign-in'
@@ -126,6 +136,7 @@ export interface FileRouteTypes {
     | '/'
     | '/enter-host'
     | '/setup'
+    | '/api/host'
     | '/dashboard'
     | '/api/auth/$'
     | '/dashboard/sign-in'
@@ -138,6 +149,7 @@ export interface FileRouteTypes {
     | '/enter-host'
     | '/dashboard/$workspaceId'
     | '/(host)/setup'
+    | '/api/host'
     | '/dashboard/'
     | '/api/auth/$'
     | '/dashboard/(auth)/sign-in'
@@ -150,6 +162,7 @@ export interface RootRouteChildren {
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   EnterHostRoute: typeof EnterHostRoute
   hostSetupRoute: typeof hostSetupRoute
+  ApiHostRoute: typeof ApiHostRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -182,6 +195,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/'
       preLoaderRoute: typeof DashboardIndexRouteImport
       parentRoute: typeof DashboardRouteRoute
+    }
+    '/api/host': {
+      id: '/api/host'
+      path: '/api/host'
+      fullPath: '/api/host'
+      preLoaderRoute: typeof ApiHostRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/(host)/setup': {
       id: '/(host)/setup'
@@ -265,6 +285,7 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
   EnterHostRoute: EnterHostRoute,
   hostSetupRoute: hostSetupRoute,
+  ApiHostRoute: ApiHostRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

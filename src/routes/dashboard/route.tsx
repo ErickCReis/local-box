@@ -11,15 +11,17 @@ export const Route = createFileRoute('/dashboard')({
       throw redirect({ to: '/enter-host' })
     }
 
-    const { data } = await state.authClient.getSession()
+    const response = await state.authClient.getSession().catch(() => null)
 
-    if (data?.session.token) {
-      state.convexQueryClient.serverHttpClient?.setAuth(data.session.token)
+    if (response?.data?.session.token) {
+      state.convexQueryClient.serverHttpClient?.setAuth(
+        response.data.session.token,
+      )
     }
 
     const context = {
       ...state,
-      user: data?.user,
+      user: response?.data?.user,
     }
 
     return context

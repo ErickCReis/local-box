@@ -8,12 +8,12 @@ import { nitro } from 'nitro/vite'
 export default defineConfig({
   server: {
     port: process.env.PORT ? parseInt(process.env.PORT) : 3000,
-    allowedHosts: ['.trycloudflare.com'],
+    allowedHosts: ['.trycloudflare.com', 'localhost'],
     cors: {
       origin: [
         'http://localhost:3000',
         'http://localhost:3001',
-        /.*\.trycloudflare\.com.*/,
+        /.*\.trycloudflare\.com/,
       ],
       credentials: true,
     },
@@ -22,7 +22,21 @@ export default defineConfig({
     tailwindcss(),
     tsConfigPaths(),
     tanstackStart(),
-    nitro({ config: { preset: 'bun' } }),
+    nitro({
+      config: {
+        preset: 'bun',
+        routeRules: {
+          '/api/*': {
+            cors: true,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+              'Access-Control-Allow-Credentials': 'true',
+            },
+          },
+        },
+      },
+    }),
     viteReact(),
   ],
 })

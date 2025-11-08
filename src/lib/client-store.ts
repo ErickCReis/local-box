@@ -1,27 +1,27 @@
 import { QueryClient } from '@tanstack/react-query'
 import { Store, useStore } from '@tanstack/react-store'
 import { ConvexQueryClient } from '@convex-dev/react-query'
-import {
-  convexClient,
-  crossDomainClient,
-} from '@convex-dev/better-auth/client/plugins'
+import { convexClient } from '@convex-dev/better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 import type { AuthClient } from '@convex-dev/better-auth/react'
 
 export const clientStore = new Store({
   hostUrl: null,
+  convexUrl: null,
   queryClient: new QueryClient(),
   convexQueryClient: null,
   authClient: null,
 } as
   | {
       hostUrl: null
+      convexUrl: null
       queryClient: QueryClient
       convexQueryClient: null
       authClient: null
     }
   | {
       hostUrl: string
+      convexUrl: string
       queryClient: QueryClient
       convexQueryClient: ConvexQueryClient
       authClient: AuthClient
@@ -35,10 +35,10 @@ export function useClientStore() {
   }
 }
 
-function createClientStore(hostUrl: string) {
+function createClientStore(convexUrl: string) {
   const { queryClient } = clientStore.state
 
-  const convexQueryClient = new ConvexQueryClient(hostUrl, {
+  const convexQueryClient = new ConvexQueryClient(convexUrl, {
     verbose: true,
     expectAuth: true,
   })
@@ -54,19 +54,29 @@ function createClientStore(hostUrl: string) {
   return convexQueryClient
 }
 
-function updateClientStore(hostUrl: string | null) {
-  const { hostUrl: currentHostUrl, queryClient } = clientStore.state
-  if (currentHostUrl === hostUrl) return
+function updateClientStore(hostUrl: string | null, convexUrl?: string | null) {
+  const {
+    hostUrl: currentHostUrl,
+    convexUrl: currentConvexUrl,
+    queryClient,
+  } = clientStore.state
+  if (currentHostUrl === hostUrl && currentConvexUrl === convexUrl) return
 
   clearClientStore()
   if (!hostUrl) {
     window.localStorage.removeItem('hostUrl')
+    window.localStorage.removeItem('convexUrl')
     return
   }
 
-  window.localStorage.setItem('hostUrl', hostUrl)
+  if (!convexUrl) {
+    throw new Error('Convex URL is required when setting host URL')
+  }
 
-  const convexQueryClient = createClientStore('http://localhost:3210')
+  window.localStorage.setItem('hostUrl', hostUrl)
+  window.localStorage.setItem('convexUrl', convexUrl)
+
+  const convexQueryClient = createClientStore(convexUrl)
 
   const authClient = createAuthClient({
     baseURL: hostUrl,
@@ -76,7 +86,13 @@ function updateClientStore(hostUrl: string | null) {
     plugins: [convexClient()],
   })
 
-  clientStore.setState({ hostUrl, queryClient, convexQueryClient, authClient })
+  clientStore.setState({
+    hostUrl,
+    convexUrl,
+    queryClient,
+    convexQueryClient,
+    authClient,
+  })
 }
 
 function clearClientStore() {
@@ -88,6 +104,7 @@ function clearClientStore() {
 
   clientStore.setState({
     hostUrl: null,
+    convexUrl: null,
     convexQueryClient: null,
     authClient: null,
     queryClient,
@@ -95,5 +112,9 @@ function clearClientStore() {
 }
 
 if (typeof window !== 'undefined') {
-  updateClientStore(window.localStorage.getItem('hostUrl'))
+  const storedHostUrl = window.localStorage.getItem('hostUrl')
+  const storedConvexUrl = window.localStorage.getItem('convexUrl')
+  if (storedHostUrl && storedConvexUrl) {
+    updateClientStore(storedHostUrl, storedConvexUrl)
+  }
 }
