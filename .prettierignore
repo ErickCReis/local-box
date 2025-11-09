@@ -2,9 +2,7 @@
 .output/
 .prettierrc
 .tanstack/
-**/api
 **/build
-**/public
 **/public
 convex/_generated/
 convex/README.md

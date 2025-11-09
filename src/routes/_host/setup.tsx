@@ -120,7 +120,7 @@ export const stopQuickTunnels = createServerFn().handler(async () => {
 
 // --- Route ---
 
-export const Route = createFileRoute('/(host)/setup')({
+export const Route = createFileRoute('/_host/setup')({
   component: Setup,
   loader: async () => {
     const [dockerStatus, quickTunnels] = await Promise.all([

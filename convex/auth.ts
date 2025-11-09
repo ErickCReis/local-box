@@ -1,13 +1,52 @@
 import { createClient } from '@convex-dev/better-auth'
 import { convex, crossDomain } from '@convex-dev/better-auth/plugins'
 import { betterAuth } from 'better-auth'
-import { components } from './_generated/api'
-import { query } from './_generated/server'
-import type { DataModel } from './_generated/dataModel'
-import type { GenericCtx } from '@convex-dev/better-auth'
+import { components, internal } from './_generated/api'
+import { internalQuery, query } from './_generated/server'
+import type { DataModel, Doc } from './_generated/dataModel'
+import type { AuthFunctions, GenericCtx } from '@convex-dev/better-auth'
+
+const authFunctions: AuthFunctions = internal.auth
 
 export const authComponent = createClient<DataModel>(components.betterAuth, {
   verbose: true,
+  authFunctions,
+  triggers: {
+    user: {
+      onCreate: async (ctx, doc) => {
+        const anyMember = await ctx.db.query('members').first()
+        if (!anyMember) {
+          await ctx.db.insert('members', {
+            userId: doc._id,
+            role: 'owner',
+          })
+        }
+      },
+    },
+  },
+})
+
+export const { onCreate, onUpdate, onDelete } = authComponent.triggersApi()
+
+export const getCurrentUser = query({
+  args: {},
+  handler: async (ctx) => {
+    const user = await authComponent.safeGetAuthUser(ctx)
+    if (!user) return null
+
+    const member = await ctx.db
+      .query('members')
+      .withIndex('by_user', (q) => q.eq('userId', user._id))
+      .first()
+    if (!member) return null
+
+    return {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: member.role,
+    }
+  },
 })
 
 export function createAuth(
@@ -39,39 +78,3 @@ export function createAuth(
     plugins: [convex()],
   })
 }
-
-export const getCurrentUser = query({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) return null
-
-    // Get user profile with role
-    const profile = await ctx.db
-      .query('userProfiles')
-      .withIndex('by_user', (q) => q.eq('userId', identity.subject))
-      .first()
-
-    return {
-      _id: identity.subject,
-      name: identity.nickname ?? identity.name ?? 'Anonymous',
-      email: identity.email,
-      role: profile?.role ?? 'member',
-    }
-  },
-})
-
-export const isAdmin = query({
-  args: {},
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity()
-    if (!identity) return false
-
-    const profile = await ctx.db
-      .query('userProfiles')
-      .withIndex('by_user', (q) => q.eq('userId', identity.subject))
-      .first()
-
-    return profile?.role === 'owner' || profile?.role === 'admin'
-  },
-})

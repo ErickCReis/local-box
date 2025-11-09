@@ -9,8 +9,10 @@
  */
 
 import type * as auth from "../auth.js";
+import type * as files from "../files.js";
 import type * as http from "../http.js";
-import type * as workspaces from "../workspaces.js";
+import type * as members from "../members.js";
+import type * as tags from "../tags.js";
 
 import type {
   ApiFromModules,
@@ -28,8 +30,10 @@ import type {
  */
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
+  files: typeof files;
   http: typeof http;
-  workspaces: typeof workspaces;
+  members: typeof members;
+  tags: typeof tags;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
 

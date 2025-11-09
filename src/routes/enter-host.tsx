@@ -29,7 +29,7 @@ function RouteComponent() {
     },
     onSuccess: ({ hostUrl: url, convexUrl }) => {
       setHostUrl(url, convexUrl)
-      navigate({ to: '/dashboard/sign-in' })
+      navigate({ to: '/dashboard' })
     },
   })
 

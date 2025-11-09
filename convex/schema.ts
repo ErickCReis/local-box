@@ -2,12 +2,41 @@ import { defineSchema, defineTable } from 'convex/server'
 import { v } from 'convex/values'
 
 export default defineSchema({
-  userProfiles: defineTable({
-    userId: v.string(), // better-auth user ID
+  // Global membership (no workspaces)
+  members: defineTable({
+    userId: v.string(), // better-auth user id
     role: v.union(v.literal('owner'), v.literal('admin'), v.literal('member')),
   }).index('by_user', ['userId']),
-  workspaces: defineTable({
+  // Global invitations (no workspaces)
+  invitations: defineTable({
+    code: v.string(), // unique short token
+    role: v.union(v.literal('admin'), v.literal('member')),
+    email: v.optional(v.string()),
+    expiresAt: v.number(),
+    createdBy: v.string(), // user id
+    acceptedAt: v.optional(v.number()),
+    acceptedUserId: v.optional(v.string()),
+  }).index('by_code', ['code']),
+  // Tags are the only organization primitive (no folders), global
+  tags: defineTable({
     name: v.string(),
-    ownerId: v.string(),
+    color: v.optional(v.string()),
+  })
+    .index('by_name', ['name']),
+  // Files stored in Convex storage, global
+  files: defineTable({
+    storageId: v.id('_storage'),
+    filename: v.string(),
+    contentType: v.optional(v.string()),
+    size: v.number(),
+    uploaderUserId: v.optional(v.string()),
   }),
+  // Join table mapping files to tags (many-to-many), global
+  fileTags: defineTable({
+    fileId: v.id('files'),
+    tagId: v.id('tags'),
+  })
+    .index('by_file', ['fileId'])
+    .index('by_tag', ['tagId'])
+    .index('by_file_and_tag', ['fileId', 'tagId']),
 })

@@ -112,9 +112,9 @@ function clearClientStore() {
 }
 
 if (typeof window !== 'undefined') {
-  const storedHostUrl = window.localStorage.getItem('hostUrl')
-  const storedConvexUrl = window.localStorage.getItem('convexUrl')
-  if (storedHostUrl && storedConvexUrl) {
-    updateClientStore(storedHostUrl, storedConvexUrl)
-  }
+  const storedHostUrl =
+    window.localStorage.getItem('hostUrl') ?? 'http://localhost:3000'
+  const storedConvexUrl =
+    window.localStorage.getItem('convexUrl') ?? 'http://localhost:3210'
+  updateClientStore(storedHostUrl, storedConvexUrl)
 }
