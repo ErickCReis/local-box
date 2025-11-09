@@ -1,11 +1,13 @@
 import { reactStartHandler } from '@convex-dev/better-auth/react-start'
 import { createFileRoute } from '@tanstack/react-router'
 import { createMiddleware } from '@tanstack/react-start'
+import { getHostStore } from '@/lib/host-store'
 
 const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:8080',
+  getHostStore().tunnelUrl,
 ]
 
 const corsMiddleware = createMiddleware().server(async ({ request, next }) => {

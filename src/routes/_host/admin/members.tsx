@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+import { createFileRoute, useLoaderData } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useState } from 'react'
 import { api } from '@/../convex/_generated/api'
@@ -18,7 +18,7 @@ export const Route = createFileRoute('/_host/admin/members')({
 })
 
 function MembersPage() {
-  const { hostUrl } = Route.useRouteContext()
+  const { tunnelUrl } = useLoaderData({ from: '/_host/admin' })
 
   const members = useQuery(api.members.listMembers, {}) ?? []
 
@@ -37,7 +37,7 @@ function MembersPage() {
       ttlMinutes: 60,
     })
 
-    setInviteUrl(`${hostUrl}/dashboard?invite=${res.code}`)
+    setInviteUrl(`${tunnelUrl}/dashboard?invite=${res.code}`)
   }
 
   return (

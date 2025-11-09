@@ -1,14 +1,20 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
 import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
+import { toast } from 'sonner'
 import { clientStore } from '@/lib/client-store'
 import { DOCKER } from '@/lib/docker'
+import { getHostStore } from '@/lib/host-store'
 
-export const ensureDockerRunning = createServerFn().handler(async () => {
-  const status = await DOCKER.getDockerStatus()
-  // Consider Docker "running" if all services are in running state
-  const running = status.every((s) => s.State === 'running')
-  return running
+export const setupStatus = createServerFn().handler(async () => {
+  const dockerStatus = await DOCKER.getDockerStatus()
+  const tunnelUrl = getHostStore().tunnelUrl
+  return {
+    dockerStatus:
+      dockerStatus.length > 0 &&
+      dockerStatus.every((s) => s.State === 'running'),
+    tunnelUrl,
+  }
 })
 
 export const Route = createFileRoute('/_host/admin')({
@@ -22,11 +28,6 @@ export const Route = createFileRoute('/_host/admin')({
 
     // Attach auth token to convex client if available
     const response = await state.authClient.getSession().catch(() => null)
-    if (response?.data?.session.token) {
-      state.convexQueryClient.serverHttpClient?.setAuth(
-        response.data.session.token,
-      )
-    }
 
     const context = {
       ...state,
@@ -35,11 +36,21 @@ export const Route = createFileRoute('/_host/admin')({
     return context
   },
   loader: async ({ context }) => {
-    const ok = await ensureDockerRunning()
-    if (!ok) {
+    const { dockerStatus, tunnelUrl } = await setupStatus()
+    if (!dockerStatus) {
+      toast.error('Docker is not running')
       throw redirect({ to: '/setup' })
     }
-    return context
+
+    if (!tunnelUrl) {
+      toast.error('Tunnel is not running')
+      throw redirect({ to: '/setup' })
+    }
+
+    return {
+      ...context,
+      tunnelUrl,
+    }
   },
 })
 
