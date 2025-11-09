@@ -3,7 +3,6 @@ import { defineConfig } from 'vite'
 import tsConfigPaths from 'vite-tsconfig-paths'
 import tailwindcss from '@tailwindcss/vite'
 import viteReact from '@vitejs/plugin-react'
-import { nitro } from 'nitro/vite'
 
 export default defineConfig({
   server: {
@@ -18,25 +17,5 @@ export default defineConfig({
       credentials: true,
     },
   },
-  plugins: [
-    tailwindcss(),
-    tsConfigPaths(),
-    tanstackStart(),
-    nitro({
-      config: {
-        preset: 'bun',
-        routeRules: {
-          '/api/*': {
-            cors: true,
-            headers: {
-              'Access-Control-Allow-Origin': '*',
-              'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-              'Access-Control-Allow-Credentials': 'true',
-            },
-          },
-        },
-      },
-    }),
-    viteReact(),
-  ],
+  plugins: [tailwindcss(), tsConfigPaths(), tanstackStart(), viteReact()],
 })

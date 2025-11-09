@@ -1,0 +1,7 @@
+:80 {
+    handle_path /convex-host* {
+        reverse_proxy host.docker.internal:3210
+    }
+    reverse_proxy host.docker.internal:3000
+}
+

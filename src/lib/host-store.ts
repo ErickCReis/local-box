@@ -3,17 +3,13 @@ import { Store } from '@tanstack/store'
 import type { Tunnel } from 'cloudflared'
 
 type HostStore = {
-  tunnelApi: Tunnel | null
-  tunnelUrlApi: string | null
-  tunnelConvex: Tunnel | null
-  tunnelUrlConvex: string | null
+  tunnel: Tunnel | null
+  tunnelUrl: string | null
 }
 
 const hostStore = new Store<HostStore>({
-  tunnelApi: null,
-  tunnelUrlApi: null,
-  tunnelConvex: null,
-  tunnelUrlConvex: null,
+  tunnel: null,
+  tunnelUrl: null,
 })
 
 export const getHostStore = createServerOnlyFn(() => hostStore.state)

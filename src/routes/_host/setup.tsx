@@ -36,8 +36,7 @@ export const whatchDockerStatus = createServerFn().handler(async function* () {
 export const getQuickTunnels = createServerFn().handler(() => {
   const hostStore = getHostStore()
   return {
-    tunnelApi: hostStore.tunnelUrlApi,
-    tunnelConvex: hostStore.tunnelUrlConvex,
+    tunnel: hostStore.tunnelUrl,
   }
 })
 
@@ -49,70 +48,45 @@ export const startQuickTunnels = createServerFn().handler(async () => {
   }
 
   const events = ['stdout', 'stderr', 'exit', 'error']
-  let tunnelApi: Tunnel | null = hostStore.tunnelApi
-  let urlApi = hostStore.tunnelUrlApi
-  let tunnelConvex: Tunnel | null = hostStore.tunnelConvex
-  let urlConvex = hostStore.tunnelUrlConvex
+  let tunnel: Tunnel | null = hostStore.tunnel
+  let url = hostStore.tunnelUrl
 
-  // Start API tunnel if not already running
-  if (!urlApi) {
-    tunnelApi = Tunnel.quick('http://localhost:3000')
-    urlApi = await new Promise<string>((r) => tunnelApi!.once('url', r))
-    await new Promise((resolve) => tunnelApi!.once('connected', resolve))
+  // Start single proxy tunnel (handles both services) if not already running
+  if (!url) {
+    tunnel = Tunnel.quick('http://localhost:8080')
+    url = await new Promise<string>((r) => tunnel!.once('url', r))
+    await new Promise((resolve) => tunnel!.once('connected', resolve))
 
     for (const event of events) {
-      tunnelApi.on(event as keyof TunnelEvents, (data: unknown) => {
-        console.log(`tunnelApi ${event}:`, data)
-      })
-    }
-  }
-
-  // Start Convex tunnel if not already running
-  if (!urlConvex) {
-    tunnelConvex = Tunnel.quick('http://localhost:3210')
-    urlConvex = await new Promise<string>((r) => tunnelConvex!.once('url', r))
-    await new Promise((resolve) => tunnelConvex!.once('connected', resolve))
-
-    for (const event of events) {
-      tunnelConvex.on(event as keyof TunnelEvents, (data: unknown) => {
-        console.log(`tunnelConvex ${event}:`, data)
+      tunnel.on(event as keyof TunnelEvents, (data: unknown) => {
+        console.log(`tunnel ${event}:`, data)
       })
     }
   }
 
   setHostStore({
     ...getHostStore(),
-    tunnelApi,
-    tunnelUrlApi: urlApi,
-    tunnelConvex,
-    tunnelUrlConvex: urlConvex,
+    tunnel,
+    tunnelUrl: url,
   })
 
   return {
-    tunnelApi: urlApi,
-    tunnelConvex: urlConvex,
+    tunnel: url,
   }
 })
 
 export const stopQuickTunnels = createServerFn().handler(async () => {
   const hostStore = getHostStore()
 
-  // Stop API tunnel
-  if (hostStore.tunnelApi) {
-    await hostStore.tunnelApi.stop()
-  }
-
-  // Stop Convex tunnel
-  if (hostStore.tunnelConvex) {
-    await hostStore.tunnelConvex.stop()
+  // Stop tunnel
+  if (hostStore.tunnel) {
+    await hostStore.tunnel.stop()
   }
 
   setHostStore({
     ...getHostStore(),
-    tunnelApi: null,
-    tunnelUrlApi: null,
-    tunnelConvex: null,
-    tunnelUrlConvex: null,
+    tunnel: null,
+    tunnelUrl: null,
   })
 
   return null
@@ -123,25 +97,22 @@ export const stopQuickTunnels = createServerFn().handler(async () => {
 export const Route = createFileRoute('/_host/setup')({
   component: Setup,
   loader: async () => {
-    const [dockerStatus, quickTunnels] = await Promise.all([
+    const [dockerStatus, quickTunnel] = await Promise.all([
       getDockerStatus(),
       getQuickTunnels(),
     ])
 
     return {
       dockerStatus,
-      quickTunnels,
+      quickTunnel,
     }
   },
 })
 
 function Setup() {
-  const { quickTunnels, dockerStatus } = Route.useLoaderData()
+  const { quickTunnel, dockerStatus } = Route.useLoaderData()
   const [dockerStatusResult, setDockerStatusResult] = useState(dockerStatus)
-  const [publicUrlApi, setPublicUrlApi] = useState(quickTunnels.tunnelApi)
-  const [publicUrlConvex, setPublicUrlConvex] = useState(
-    quickTunnels.tunnelConvex,
-  )
+  const [publicUrl, setPublicUrl] = useState(quickTunnel.tunnel)
 
   // Docker actions
   const dockerUpFn = useServerFn(dockerUp)
@@ -176,8 +147,7 @@ function Setup() {
   const startTunnelsMutation = useMutation({
     mutationFn: startTunnelsFn,
     onSuccess: (res) => {
-      setPublicUrlApi(res.tunnelApi)
-      setPublicUrlConvex(res.tunnelConvex)
+      setPublicUrl(res.tunnel)
     },
   })
 
@@ -185,8 +155,7 @@ function Setup() {
   const stopTunnelsMutation = useMutation({
     mutationFn: stopTunnelsFn,
     onSuccess: () => {
-      setPublicUrlApi(null)
-      setPublicUrlConvex(null)
+      setPublicUrl(null)
     },
   })
 
@@ -238,58 +207,34 @@ function Setup() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-medium">Public Tunnels</h2>
+        <h2 className="text-xl font-medium">Public Tunnel</h2>
 
         <div className="flex gap-2">
           <Button
             onClick={() => startTunnelsMutation.mutate({})}
             disabled={startTunnelsMutation.isPending}
           >
-            Start All Tunnels
+            Start Tunnel
           </Button>
           <Button
             variant="secondary"
             onClick={() => stopTunnelsMutation.mutate({})}
             disabled={stopTunnelsMutation.isPending}
           >
-            Stop All Tunnels
+            Stop Tunnel
           </Button>
         </div>
 
         <div className="space-y-4">
           <div className="border rounded p-4 space-y-3">
-            <h3 className="font-medium">API</h3>
-            {publicUrlApi ? (
+            <h3 className="font-medium">Proxy URL</h3>
+            {publicUrl ? (
               <div className="flex items-center gap-2">
-                <span className="font-mono text-sm break-all">
-                  {publicUrlApi}
-                </span>
+                <span className="font-mono text-sm break-all">{publicUrl}</span>
                 <Button
                   size="sm"
                   variant="outline"
-                  onClick={() => navigator.clipboard.writeText(publicUrlApi)}
-                >
-                  Copy
-                </Button>
-              </div>
-            ) : (
-              <div className="text-sm text-muted-foreground">
-                Tunnel not running
-              </div>
-            )}
-          </div>
-
-          <div className="border rounded p-4 space-y-3">
-            <h3 className="font-medium">Convex</h3>
-            {publicUrlConvex ? (
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-sm break-all">
-                  {publicUrlConvex}
-                </span>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => navigator.clipboard.writeText(publicUrlConvex)}
+                  onClick={() => navigator.clipboard.writeText(publicUrl)}
                 >
                   Copy
                 </Button>

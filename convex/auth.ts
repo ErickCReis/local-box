@@ -61,7 +61,7 @@ export function createAuth(
       disabled: optionsOnly,
     },
     baseURL: siteUrl,
-    trustedOrigins: [siteUrl, 'http://localhost:3001'],
+    trustedOrigins: [siteUrl, 'http://localhost:3001', 'http://localhost:8080'],
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,

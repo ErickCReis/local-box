@@ -76,7 +76,8 @@ function updateClientStore(hostUrl: string | null, convexUrl?: string | null) {
   window.localStorage.setItem('hostUrl', hostUrl)
   window.localStorage.setItem('convexUrl', convexUrl)
 
-  const convexQueryClient = createClientStore(convexUrl)
+  const convexQueryClient = createClientStore(`${hostUrl}/convex-host`)
+  // const convexQueryClient = createClientStore(convexUrl)
 
   const authClient = createAuthClient({
     baseURL: hostUrl,

@@ -2,13 +2,20 @@ import { reactStartHandler } from '@convex-dev/better-auth/react-start'
 import { createFileRoute } from '@tanstack/react-router'
 import { createMiddleware } from '@tanstack/react-start'
 
-const corsMiddleware = createMiddleware().server(async ({ next }) => {
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:8080',
+]
+
+const corsMiddleware = createMiddleware().server(async ({ request, next }) => {
   const result = await next()
 
-  result.response.headers.set(
-    'Access-Control-Allow-Origin',
-    'http://localhost:3001',
-  )
+  const origin = request.headers.get('Origin') ?? ''
+  if (allowedOrigins.includes(origin)) {
+    result.response.headers.set('Access-Control-Allow-Origin', origin)
+  }
+
   result.response.headers.set(
     'Access-Control-Allow-Methods',
     'GET, POST, OPTIONS',
