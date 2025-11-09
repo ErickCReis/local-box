@@ -24,8 +24,11 @@ function RouteComponent() {
       await authClient.signIn.email({
         email: value.email,
         password: value.password,
-        callbackURL: '/dashboard',
         fetchOptions: {
+          onSuccess: () => {
+            navigate({ to: '/dashboard' })
+            toast.success('Sign in successful')
+          },
           onError: (error) => {
             toast.error(error.error.message || error.error.statusText)
           },
@@ -46,12 +49,8 @@ function RouteComponent() {
 
       <p className="mb-6 text-center text-sm text-muted-foreground">
         Host: <span className="font-medium">{hostUrl}</span>
-        <Button
-          variant="link"
-          className="px-1"
-          onClick={() => navigate({ to: '/enter-host' })}
-        >
-          Change
+        <Button variant="link" className="px-1" asChild>
+          <Link to="/enter-host">Change</Link>
         </Button>
       </p>
 

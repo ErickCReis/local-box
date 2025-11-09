@@ -14,7 +14,7 @@ import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardSignUpRouteImport } from './routes/dashboard/sign-up'
 import { Route as DashboardSignInRouteImport } from './routes/dashboard/sign-in'
-import { Route as ApiHostRouteImport } from './routes/api/host'
+import { Route as ApiPingRouteImport } from './routes/api/ping'
 import { Route as HostSetupRouteImport } from './routes/_host/setup'
 import { Route as DashboardAuthedRouteRouteImport } from './routes/dashboard/_authed/route'
 import { Route as HostAdminRouteRouteImport } from './routes/_host/admin/route'
@@ -48,9 +48,9 @@ const DashboardSignInRoute = DashboardSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
-const ApiHostRoute = ApiHostRouteImport.update({
-  id: '/api/host',
-  path: '/api/host',
+const ApiPingRoute = ApiPingRouteImport.update({
+  id: '/api/ping',
+  path: '/api/ping',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HostSetupRoute = HostSetupRouteImport.update({
@@ -94,7 +94,7 @@ export interface FileRoutesByFullPath {
   '/enter-host': typeof EnterHostRoute
   '/admin': typeof HostAdminRouteRouteWithChildren
   '/setup': typeof HostSetupRoute
-  '/api/host': typeof ApiHostRoute
+  '/api/ping': typeof ApiPingRoute
   '/dashboard/sign-in': typeof DashboardSignInRoute
   '/dashboard/sign-up': typeof DashboardSignUpRoute
   '/admin/members': typeof HostAdminMembersRoute
@@ -107,7 +107,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardAuthedIndexRoute
   '/enter-host': typeof EnterHostRoute
   '/setup': typeof HostSetupRoute
-  '/api/host': typeof ApiHostRoute
+  '/api/ping': typeof ApiPingRoute
   '/dashboard/sign-in': typeof DashboardSignInRoute
   '/dashboard/sign-up': typeof DashboardSignUpRoute
   '/admin/members': typeof HostAdminMembersRoute
@@ -122,7 +122,7 @@ export interface FileRoutesById {
   '/_host/admin': typeof HostAdminRouteRouteWithChildren
   '/dashboard/_authed': typeof DashboardAuthedRouteRouteWithChildren
   '/_host/setup': typeof HostSetupRoute
-  '/api/host': typeof ApiHostRoute
+  '/api/ping': typeof ApiPingRoute
   '/dashboard/sign-in': typeof DashboardSignInRoute
   '/dashboard/sign-up': typeof DashboardSignUpRoute
   '/_host/admin/members': typeof HostAdminMembersRoute
@@ -138,7 +138,7 @@ export interface FileRouteTypes {
     | '/enter-host'
     | '/admin'
     | '/setup'
-    | '/api/host'
+    | '/api/ping'
     | '/dashboard/sign-in'
     | '/dashboard/sign-up'
     | '/admin/members'
@@ -151,7 +151,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/enter-host'
     | '/setup'
-    | '/api/host'
+    | '/api/ping'
     | '/dashboard/sign-in'
     | '/dashboard/sign-up'
     | '/admin/members'
@@ -165,7 +165,7 @@ export interface FileRouteTypes {
     | '/_host/admin'
     | '/dashboard/_authed'
     | '/_host/setup'
-    | '/api/host'
+    | '/api/ping'
     | '/dashboard/sign-in'
     | '/dashboard/sign-up'
     | '/_host/admin/members'
@@ -180,7 +180,7 @@ export interface RootRouteChildren {
   EnterHostRoute: typeof EnterHostRoute
   HostAdminRouteRoute: typeof HostAdminRouteRouteWithChildren
   HostSetupRoute: typeof HostSetupRoute
-  ApiHostRoute: typeof ApiHostRoute
+  ApiPingRoute: typeof ApiPingRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -221,11 +221,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSignInRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
-    '/api/host': {
-      id: '/api/host'
-      path: '/api/host'
-      fullPath: '/api/host'
-      preLoaderRoute: typeof ApiHostRouteImport
+    '/api/ping': {
+      id: '/api/ping'
+      path: '/api/ping'
+      fullPath: '/api/ping'
+      preLoaderRoute: typeof ApiPingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_host/setup': {
@@ -327,7 +327,7 @@ const rootRouteChildren: RootRouteChildren = {
   EnterHostRoute: EnterHostRoute,
   HostAdminRouteRoute: HostAdminRouteRouteWithChildren,
   HostSetupRoute: HostSetupRoute,
-  ApiHostRoute: ApiHostRoute,
+  ApiPingRoute: ApiPingRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport

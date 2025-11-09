@@ -6,6 +6,7 @@ import {
 } from '@tanstack/react-router'
 import { ThemeProvider } from '@tanstack-themes/react'
 import { Toaster } from 'sonner'
+import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import type { QueryClient } from '@tanstack/react-query'
 import appCss from '@/styles/app.css?url'
 
@@ -63,6 +64,7 @@ function RootComponent() {
         <Outlet />
         <Scripts />
         <Toaster />
+        <TanStackRouterDevtools />
       </body>
     </html>
   )

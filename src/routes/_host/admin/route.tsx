@@ -6,8 +6,8 @@ import { DOCKER } from '@/lib/docker'
 
 export const ensureDockerRunning = createServerFn().handler(async () => {
   const status = await DOCKER.getDockerStatus()
-  // Consider Docker "running" if any service is in running state
-  const running = status.some((s) => s.State === 'running')
+  // Consider Docker "running" if all services are in running state
+  const running = status.every((s) => s.State === 'running')
   return running
 })
 
@@ -45,6 +45,7 @@ export const Route = createFileRoute('/_host/admin')({
 
 function AdminLayout() {
   const { convexQueryClient, authClient } = Route.useRouteContext()
+
   return (
     <ConvexBetterAuthProvider
       client={convexQueryClient.convexClient}

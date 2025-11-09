@@ -7,21 +7,18 @@ import type { AuthClient } from '@convex-dev/better-auth/react'
 
 export const clientStore = new Store({
   hostUrl: null,
-  convexUrl: null,
   queryClient: new QueryClient(),
   convexQueryClient: null,
   authClient: null,
 } as
   | {
       hostUrl: null
-      convexUrl: null
       queryClient: QueryClient
       convexQueryClient: null
       authClient: null
     }
   | {
       hostUrl: string
-      convexUrl: string
       queryClient: QueryClient
       convexQueryClient: ConvexQueryClient
       authClient: AuthClient
@@ -42,6 +39,7 @@ function createClientStore(convexUrl: string) {
     verbose: true,
     expectAuth: true,
   })
+
   queryClient.defaultQueryOptions({
     queryKey: [],
     queryKeyHashFn: convexQueryClient.hashFn(),
@@ -54,30 +52,19 @@ function createClientStore(convexUrl: string) {
   return convexQueryClient
 }
 
-function updateClientStore(hostUrl: string | null, convexUrl?: string | null) {
-  const {
-    hostUrl: currentHostUrl,
-    convexUrl: currentConvexUrl,
-    queryClient,
-  } = clientStore.state
-  if (currentHostUrl === hostUrl && currentConvexUrl === convexUrl) return
+function updateClientStore(hostUrl: string | null) {
+  const { hostUrl: currentHostUrl, queryClient } = clientStore.state
+  if (currentHostUrl === hostUrl) return
 
   clearClientStore()
   if (!hostUrl) {
     window.localStorage.removeItem('hostUrl')
-    window.localStorage.removeItem('convexUrl')
     return
   }
 
-  if (!convexUrl) {
-    throw new Error('Convex URL is required when setting host URL')
-  }
-
   window.localStorage.setItem('hostUrl', hostUrl)
-  window.localStorage.setItem('convexUrl', convexUrl)
 
   const convexQueryClient = createClientStore(`${hostUrl}/convex-host`)
-  // const convexQueryClient = createClientStore(convexUrl)
 
   const authClient = createAuthClient({
     baseURL: hostUrl,
@@ -89,7 +76,6 @@ function updateClientStore(hostUrl: string | null, convexUrl?: string | null) {
 
   clientStore.setState({
     hostUrl,
-    convexUrl,
     queryClient,
     convexQueryClient,
     authClient,
@@ -105,7 +91,6 @@ function clearClientStore() {
 
   clientStore.setState({
     hostUrl: null,
-    convexUrl: null,
     convexQueryClient: null,
     authClient: null,
     queryClient,
@@ -113,9 +98,6 @@ function clearClientStore() {
 }
 
 if (typeof window !== 'undefined') {
-  const storedHostUrl =
-    window.localStorage.getItem('hostUrl') ?? 'http://localhost:3000'
-  const storedConvexUrl =
-    window.localStorage.getItem('convexUrl') ?? 'http://localhost:3210'
-  updateClientStore(storedHostUrl, storedConvexUrl)
+  const storedHostUrl = window.localStorage.getItem('hostUrl')
+  updateClientStore(storedHostUrl)
 }

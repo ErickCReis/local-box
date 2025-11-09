@@ -1,4 +1,3 @@
-import { useEffect } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
 import { toast } from 'sonner'

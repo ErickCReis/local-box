@@ -7,7 +7,7 @@ export const Route = createFileRoute('/dashboard')({
   component: DashboardLayout,
   beforeLoad: () => {
     const state = clientStore.state
-    if (!state.convexQueryClient) {
+    if (!state.hostUrl) {
       throw redirect({ to: '/enter-host' })
     }
 

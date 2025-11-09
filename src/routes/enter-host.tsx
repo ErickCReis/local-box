@@ -17,24 +17,25 @@ function RouteComponent() {
 
   const fetchHostMutation = useMutation({
     mutationFn: async (url: string) => {
-      const response = await fetch(`${url}/api/host`)
+      const response = await fetch(`${url}/api/ping`)
       if (!response.ok) {
-        throw new Error(`Failed to fetch host info: ${response.statusText}`)
+        throw new Error(`Failed to ping host: ${response.statusText}`)
       }
       const data = await response.json()
-      if (!data.convexUrl) {
-        throw new Error('Host did not return a convex URL')
+      if (data.message !== 'pong') {
+        throw new Error('Host did not respond with pong')
       }
-      return { hostUrl: url, convexUrl: data.convexUrl }
+
+      return url
     },
-    onSuccess: ({ hostUrl: url, convexUrl }) => {
-      setHostUrl(url, convexUrl)
-      navigate({ to: '/dashboard' })
+    onSuccess: (url) => {
+      setHostUrl(url)
+      navigate({ to: '/dashboard/sign-in' })
     },
   })
 
   const form = useForm({
-    defaultValues: { hostUrl: hostUrl ?? 'http://localhost:3000' },
+    defaultValues: { hostUrl: hostUrl ?? 'http://localhost:8080' },
     validators: {
       onSubmit: z.object({ hostUrl: z.url() }),
     },

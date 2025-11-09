@@ -12,20 +12,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { useClientStore } from '@/lib/client-store'
 
 export const Route = createFileRoute('/_host/admin/members')({
   component: MembersPage,
 })
 
 function MembersPage() {
+  const { hostUrl } = Route.useRouteContext()
+
   const members = useQuery(api.members.listMembers, {}) ?? []
 
   const updateRole = useMutation(api.members.updateRole)
   const removeMember = useMutation(api.members.removeMember)
   const createInvite = useMutation(api.members.createInvite)
 
-  const { hostUrl } = useClientStore()
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
   const [inviteRole, setInviteRole] = useState<'admin' | 'member'>('member')
   const [inviteEmail, setInviteEmail] = useState('')
@@ -36,11 +36,8 @@ function MembersPage() {
       email: inviteEmail || undefined,
       ttlMinutes: 60,
     })
-    if (res?.code && hostUrl) {
-      setInviteUrl(`${hostUrl}/dashboard?invite=${res.code}`)
-    } else {
-      setInviteUrl(res?.code ?? null)
-    }
+
+    setInviteUrl(`${hostUrl}/dashboard?invite=${res.code}`)
   }
 
   return (
@@ -143,5 +140,3 @@ function MembersPage() {
     </main>
   )
 }
-
-
