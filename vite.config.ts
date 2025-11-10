@@ -8,6 +8,7 @@ import netlify from '@netlify/vite-plugin-tanstack-start'
 export default defineConfig({
   server: {
     port: process.env.PORT ? parseInt(process.env.PORT) : 3000,
+    allowedHosts: ['.trycloudflare.com'],
   },
   plugins: [
     tailwindcss(),
