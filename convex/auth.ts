@@ -61,7 +61,12 @@ export function createAuth(
       disabled: optionsOnly,
     },
     baseURL: siteUrl,
-    trustedOrigins: [siteUrl, 'http://localhost:3001', 'http://localhost:8080'],
+    trustedOrigins: [
+      siteUrl,
+      'http://localhost:3001',
+      'http://localhost:8080',
+      'https://local-box.netlify.app',
+    ],
     database: authComponent.adapter(ctx),
     emailAndPassword: {
       enabled: true,

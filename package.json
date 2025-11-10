@@ -46,6 +46,7 @@
   },
   "devDependencies": {
     "@convex-dev/eslint-plugin": "^1.0.0",
+    "@netlify/vite-plugin-tanstack-start": "^1.1.11",
     "@tailwindcss/vite": "^4.1.17",
     "@tanstack/eslint-config": "^0.3.2",
     "@tanstack/react-router-devtools": "^1.134.20",
