@@ -16,13 +16,15 @@ export default defineSchema({
     createdBy: v.string(), // user id
     acceptedAt: v.optional(v.number()),
     acceptedUserId: v.optional(v.string()),
-  }).index('by_code', ['code']),
+  })
+    .index('by_code', ['code'])
+    .index('by_created_by', ['createdBy'])
+    .index('by_accepted_user', ['acceptedUserId']),
   // Tags are the only organization primitive (no folders), global
   tags: defineTable({
     name: v.string(),
     color: v.optional(v.string()),
-  })
-    .index('by_name', ['name']),
+  }).index('by_name', ['name']),
   // Files stored in Convex storage, global
   files: defineTable({
     storageId: v.id('_storage'),
@@ -30,7 +32,7 @@ export default defineSchema({
     contentType: v.optional(v.string()),
     size: v.number(),
     uploaderUserId: v.optional(v.string()),
-  }),
+  }).index('by_uploader', ['uploaderUserId']),
   // Join table mapping files to tags (many-to-many), global
   fileTags: defineTable({
     fileId: v.id('files'),
@@ -38,5 +40,6 @@ export default defineSchema({
   })
     .index('by_file', ['fileId'])
     .index('by_tag', ['tagId'])
-    .index('by_file_and_tag', ['fileId', 'tagId']),
+    .index('by_file_and_tag', ['fileId', 'tagId'])
+    .index('by_tag_and_file', ['tagId', 'fileId']),
 })

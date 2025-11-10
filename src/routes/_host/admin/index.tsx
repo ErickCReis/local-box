@@ -19,6 +19,16 @@ function AdminHome() {
           <Button>Open Members</Button>
         </Link>
       </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-medium">Tags</h2>
+        <p className="text-sm text-muted-foreground">
+          Create, rename, and delete tags.
+        </p>
+        <Link to="/admin/tags">
+          <Button>Open Tags</Button>
+        </Link>
+      </section>
     </main>
   )
 }

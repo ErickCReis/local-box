@@ -21,6 +21,7 @@ import { Route as HostAdminRouteRouteImport } from './routes/_host/admin/route'
 import { Route as DashboardAuthedIndexRouteImport } from './routes/dashboard/_authed/index'
 import { Route as HostAdminIndexRouteImport } from './routes/_host/admin/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as HostAdminTagsRouteImport } from './routes/_host/admin/tags'
 import { Route as HostAdminMembersRouteImport } from './routes/_host/admin/members'
 
 const EnterHostRoute = EnterHostRouteImport.update({
@@ -82,6 +83,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HostAdminTagsRoute = HostAdminTagsRouteImport.update({
+  id: '/tags',
+  path: '/tags',
+  getParentRoute: () => HostAdminRouteRoute,
+} as any)
 const HostAdminMembersRoute = HostAdminMembersRouteImport.update({
   id: '/members',
   path: '/members',
@@ -98,6 +104,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/sign-in': typeof DashboardSignInRoute
   '/dashboard/sign-up': typeof DashboardSignUpRoute
   '/admin/members': typeof HostAdminMembersRoute
+  '/admin/tags': typeof HostAdminTagsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/': typeof HostAdminIndexRoute
   '/dashboard/': typeof DashboardAuthedIndexRoute
@@ -111,6 +118,7 @@ export interface FileRoutesByTo {
   '/dashboard/sign-in': typeof DashboardSignInRoute
   '/dashboard/sign-up': typeof DashboardSignUpRoute
   '/admin/members': typeof HostAdminMembersRoute
+  '/admin/tags': typeof HostAdminTagsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin': typeof HostAdminIndexRoute
 }
@@ -126,6 +134,7 @@ export interface FileRoutesById {
   '/dashboard/sign-in': typeof DashboardSignInRoute
   '/dashboard/sign-up': typeof DashboardSignUpRoute
   '/_host/admin/members': typeof HostAdminMembersRoute
+  '/_host/admin/tags': typeof HostAdminTagsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_host/admin/': typeof HostAdminIndexRoute
   '/dashboard/_authed/': typeof DashboardAuthedIndexRoute
@@ -142,6 +151,7 @@ export interface FileRouteTypes {
     | '/dashboard/sign-in'
     | '/dashboard/sign-up'
     | '/admin/members'
+    | '/admin/tags'
     | '/api/auth/$'
     | '/admin/'
     | '/dashboard/'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/dashboard/sign-in'
     | '/dashboard/sign-up'
     | '/admin/members'
+    | '/admin/tags'
     | '/api/auth/$'
     | '/admin'
   id:
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/dashboard/sign-in'
     | '/dashboard/sign-up'
     | '/_host/admin/members'
+    | '/_host/admin/tags'
     | '/api/auth/$'
     | '/_host/admin/'
     | '/dashboard/_authed/'
@@ -270,6 +282,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_host/admin/tags': {
+      id: '/_host/admin/tags'
+      path: '/tags'
+      fullPath: '/admin/tags'
+      preLoaderRoute: typeof HostAdminTagsRouteImport
+      parentRoute: typeof HostAdminRouteRoute
+    }
     '/_host/admin/members': {
       id: '/_host/admin/members'
       path: '/members'
@@ -309,11 +328,13 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 
 interface HostAdminRouteRouteChildren {
   HostAdminMembersRoute: typeof HostAdminMembersRoute
+  HostAdminTagsRoute: typeof HostAdminTagsRoute
   HostAdminIndexRoute: typeof HostAdminIndexRoute
 }
 
 const HostAdminRouteRouteChildren: HostAdminRouteRouteChildren = {
   HostAdminMembersRoute: HostAdminMembersRoute,
+  HostAdminTagsRoute: HostAdminTagsRoute,
   HostAdminIndexRoute: HostAdminIndexRoute,
 }
 

@@ -4,16 +4,6 @@ import { api } from './_generated/api'
 
 export const listMembers = query({
   args: {},
-  returns: v.array(
-    v.object({
-      userId: v.string(),
-      role: v.union(
-        v.literal('owner'),
-        v.literal('admin'),
-        v.literal('member'),
-      ),
-    }),
-  ),
   handler: async (ctx) => {
     const rows = await ctx.db.query('members').collect()
     return rows.map((r) => ({ userId: r.userId, role: r.role }))
@@ -26,7 +16,6 @@ export const createInvite = mutation({
     email: v.optional(v.string()),
     ttlMinutes: v.optional(v.number()),
   },
-  returns: v.object({ code: v.string() }),
   handler: async (ctx, { role, email, ttlMinutes }) => {
     const currentUser = await ctx.runQuery(api.auth.getCurrentUser)
     if (!currentUser) throw new Error('Not signed in')
@@ -48,7 +37,6 @@ export const createInvite = mutation({
 
 export const acceptInvite = mutation({
   args: { code: v.string() },
-  returns: v.null(),
   handler: async (ctx, { code }) => {
     const user = await ctx.runQuery(api.auth.getCurrentUser)
     if (!user) throw new Error('Not signed in')
@@ -84,7 +72,6 @@ export const updateRole = mutation({
     userId: v.string(),
     role: v.union(v.literal('owner'), v.literal('admin'), v.literal('member')),
   },
-  returns: v.null(),
   handler: async (ctx, { userId, role }) => {
     const membership = await ctx.db
       .query('members')

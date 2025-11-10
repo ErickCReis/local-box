@@ -42,10 +42,10 @@ export const Route = createFileRoute('/_host/admin')({
       throw redirect({ to: '/setup' })
     }
 
-    if (!tunnelUrl) {
-      toast.error('Tunnel is not running')
-      throw redirect({ to: '/setup' })
-    }
+    // if (!tunnelUrl) {
+    //   toast.error('Tunnel is not running')
+    //   throw redirect({ to: '/setup' })
+    // }
 
     return {
       ...context,

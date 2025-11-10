@@ -1,18 +1,15 @@
+import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 
 export const list = query({
   args: {},
-  returns: v.array(
-    v.object({
-      _id: v.id('tags'),
-      _creationTime: v.number(),
-      name: v.string(),
-      color: v.optional(v.string()),
-    }),
-  ),
   handler: async (ctx, args) => {
-    const tags = await ctx.db.query('tags').collect()
+    const tags = await ctx.db
+      .query('tags')
+      .withIndex('by_name')
+      .order('asc')
+      .collect()
     return tags
   },
 })
@@ -22,7 +19,6 @@ export const create = mutation({
     name: v.string(),
     color: v.optional(v.string()),
   },
-  returns: v.id('tags'),
   handler: async (ctx, args) => {
     // Prevent duplicate names globally
     const existing = await ctx.db
@@ -47,7 +43,6 @@ export const rename = mutation({
     name: v.string(),
     color: v.optional(v.string()),
   },
-  returns: v.null(),
   handler: async (ctx, args) => {
     const tag = await ctx.db.get(args.tagId)
     if (!tag) return null
@@ -70,7 +65,6 @@ export const rename = mutation({
 
 export const remove = mutation({
   args: { tagId: v.id('tags') },
-  returns: v.null(),
   handler: async (ctx, args) => {
     const tag = await ctx.db.get(args.tagId)
     if (!tag) return null
@@ -80,11 +74,25 @@ export const remove = mutation({
       .query('fileTags')
       .withIndex('by_tag', (q) => q.eq('tagId', args.tagId))
       .collect()
-    for (const m of mappings) {
-      await ctx.db.delete(m._id)
-    }
+    await Promise.all(mappings.map((m) => ctx.db.delete(m._id)))
 
     await ctx.db.delete(args.tagId)
     return null
+  },
+})
+
+export const listPage = query({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async (ctx, args) => {
+    const result = await ctx.db
+      .query('tags')
+      .withIndex('by_name')
+      .order('asc')
+      .paginate(args.paginationOpts)
+    return {
+      page: result.page,
+      isDone: result.isDone,
+      continueCursor: result.continueCursor,
+    }
   },
 })
