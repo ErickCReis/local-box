@@ -1,7 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { useForm } from '@tanstack/react-form'
 import { useMutation, useQuery } from 'convex/react'
-import { useMemo, useState } from 'react'
-import type { Doc } from '@convex/_generated/dataModel'
+import * as z from 'zod'
+import { useEffect } from 'react'
+import type { Doc, Id } from '@convex/_generated/dataModel'
 import { api } from '@/../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -18,53 +20,25 @@ function TagsPage() {
   const renameTag = useMutation(api.tags.rename)
   const removeTag = useMutation(api.tags.remove)
 
-  const [newName, setNewName] = useState('')
-  const [newColor, setNewColor] = useState('')
-
-  const [edited, setEdited] = useState<
-    Record<string, { name: string; color?: string }>
-  >({})
-
-  const canCreate = useMemo(() => newName.trim().length > 0, [newName])
-
-  const handleCreate = async () => {
-    if (!canCreate) return
-    await createTag({
-      name: newName.trim(),
-      color: newColor.trim() || undefined,
-    })
-    setNewName('')
-    setNewColor('')
-  }
-
-  const getEdited = (t: Doc<'tags'>) => edited[t._id]
-
-  const setEditedField = (id: string, key: 'name' | 'color', value: string) => {
-    setEdited((prev) => {
-      const current = prev[id] ?? {}
-      return { ...prev, [id]: { ...current, [key]: value } }
-    })
-  }
-
-  const handleSave = async (t: Doc<'tags'>) => {
-    const { name, color } = getEdited(t)
-    if (name.trim() === t.name && (color?.trim() || '') === (t.color || ''))
-      return
-    await renameTag({
-      tagId: t._id,
-      name: name.trim(),
-      color: color?.trim() || undefined,
-    })
-  }
-
-  const handleDelete = async (t: Doc<'tags'>) => {
-    await removeTag({ tagId: t._id })
-    setEdited((prev) => {
-      const next = { ...prev }
-      delete next[t._id]
-      return next
-    })
-  }
+  const createForm = useForm({
+    defaultValues: {
+      name: '',
+      color: '',
+    },
+    onSubmit: async ({ value }) => {
+      await createTag({
+        name: value.name.trim(),
+        color: value.color.trim() || undefined,
+      })
+      createForm.reset()
+    },
+    validators: {
+      onSubmit: z.object({
+        name: z.string().min(1, 'Name is required'),
+        color: z.string(),
+      }),
+    },
+  })
 
   return (
     <main className="p-8 max-w-3xl mx-auto space-y-6">
@@ -72,29 +46,72 @@ function TagsPage() {
 
       <section className="space-y-3">
         <h2 className="text-xl font-medium">Create</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-          <div className="space-y-2">
-            <Label>Name</Label>
-            <Input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder="e.g. Work"
-            />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            createForm.handleSubmit()
+          }}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+            <div className="space-y-2">
+              <createForm.Field name="name">
+                {(field) => (
+                  <>
+                    <Label htmlFor={field.name}>Name</Label>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="e.g. Work"
+                    />
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-red-500">
+                        {field.state.meta.errors[0]?.message}
+                      </p>
+                    )}
+                  </>
+                )}
+              </createForm.Field>
+            </div>
+            <div className="space-y-2">
+              <createForm.Field name="color">
+                {(field) => (
+                  <>
+                    <Label htmlFor={field.name}>Color (optional)</Label>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="#A3E635"
+                    />
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-red-500">
+                        {field.state.meta.errors[0]?.message}
+                      </p>
+                    )}
+                  </>
+                )}
+              </createForm.Field>
+            </div>
+            <div>
+              <createForm.Subscribe>
+                {(state) => (
+                  <Button
+                    type="submit"
+                    disabled={!state.canSubmit || state.isSubmitting}
+                  >
+                    {state.isSubmitting ? 'Adding...' : 'Add Tag'}
+                  </Button>
+                )}
+              </createForm.Subscribe>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>Color (optional)</Label>
-            <Input
-              value={newColor}
-              onChange={(e) => setNewColor(e.target.value)}
-              placeholder="#A3E635"
-            />
-          </div>
-          <div>
-            <Button onClick={handleCreate} disabled={!canCreate}>
-              Add Tag
-            </Button>
-          </div>
-        </div>
+        </form>
       </section>
 
       <section className="space-y-3">
@@ -103,59 +120,168 @@ function TagsPage() {
           {tags.length === 0 ? (
             <div className="text-sm text-muted-foreground">No tags yet</div>
           ) : (
-            tags.map((t) => {
-              const current = getEdited(t)
-              const dirty =
-                current.name.trim() !== t.name ||
-                (current.color?.trim() || '') !== (t.color || '')
-              return (
-                <div
-                  key={t._id}
-                  className="flex flex-col md:flex-row md:items-end gap-3 border rounded p-3"
-                >
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div className="space-y-2">
-                      <Label>Name</Label>
-                      <Input
-                        value={current.name}
-                        onChange={(e) =>
-                          setEditedField(t._id, 'name', e.target.value)
-                        }
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Color</Label>
-                      <Input
-                        value={current.color ?? ''}
-                        onChange={(e) =>
-                          setEditedField(t._id, 'color', e.target.value)
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={!dirty}
-                      onClick={() => handleSave(t)}
-                    >
-                      Save
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="destructive"
-                      onClick={() => handleDelete(t)}
-                    >
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              )
-            })
+            tags.map((t) => (
+              <TagEditForm
+                key={t._id}
+                tag={t}
+                onRename={async (args) => {
+                  await renameTag(args)
+                }}
+                onDelete={async (args) => {
+                  await removeTag(args)
+                }}
+              />
+            ))
           )}
         </div>
       </section>
     </main>
+  )
+}
+
+function TagEditForm({
+  tag,
+  onRename,
+  onDelete,
+}: {
+  tag: Doc<'tags'>
+  onRename: (args: {
+    tagId: Id<'tags'>
+    name: string
+    color?: string
+  }) => Promise<void>
+  onDelete: (args: { tagId: Id<'tags'> }) => Promise<void>
+}) {
+  const editForm = useForm({
+    defaultValues: {
+      name: tag.name,
+      color: tag.color || '',
+    },
+    onSubmit: async ({ value }) => {
+      const nameTrimmed = value.name.trim()
+      const colorTrimmed = value.color.trim() || undefined
+
+      // Only save if values changed
+      if (nameTrimmed !== tag.name || colorTrimmed !== (tag.color || '')) {
+        await onRename({
+          tagId: tag._id,
+          name: nameTrimmed,
+          color: colorTrimmed,
+        })
+        // Reset form to reflect the new tag values
+        editForm.reset({
+          name: nameTrimmed,
+          color: colorTrimmed || '',
+        })
+      }
+    },
+    validators: {
+      onSubmit: z.object({
+        name: z.string().min(1, 'Name is required'),
+        color: z.string(),
+      }),
+    },
+  })
+
+  // Reset form when tag changes (e.g., after external update)
+  useEffect(() => {
+    const currentValues = editForm.state.values
+    if (
+      currentValues.name !== tag.name ||
+      currentValues.color !== (tag.color || '')
+    ) {
+      editForm.reset({
+        name: tag.name,
+        color: tag.color || '',
+      })
+    }
+  }, [tag.name, tag.color, tag._id, editForm])
+
+  const handleDelete = async () => {
+    await onDelete({ tagId: tag._id })
+  }
+
+  // Check if form is dirty
+  const isDirty =
+    editForm.state.values.name.trim() !== tag.name ||
+    (editForm.state.values.color.trim() || '') !== (tag.color || '')
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        editForm.handleSubmit()
+      }}
+    >
+      <div className="flex flex-col md:flex-row md:items-end gap-3 border rounded p-3">
+        <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="space-y-2">
+            <editForm.Field name="name">
+              {(field) => (
+                <>
+                  <Label htmlFor={field.name}>Name</Label>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="text-sm text-red-500">
+                      {field.state.meta.errors[0]?.message}
+                    </p>
+                  )}
+                </>
+              )}
+            </editForm.Field>
+          </div>
+          <div className="space-y-2">
+            <editForm.Field name="color">
+              {(field) => (
+                <>
+                  <Label htmlFor={field.name}>Color</Label>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="text-sm text-red-500">
+                      {field.state.meta.errors[0]?.message}
+                    </p>
+                  )}
+                </>
+              )}
+            </editForm.Field>
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <editForm.Subscribe>
+            {(state) => (
+              <Button
+                type="submit"
+                size="sm"
+                variant="outline"
+                disabled={!isDirty || state.isSubmitting}
+              >
+                {state.isSubmitting ? 'Saving...' : 'Save'}
+              </Button>
+            )}
+          </editForm.Subscribe>
+          <Button
+            size="sm"
+            variant="destructive"
+            type="button"
+            onClick={handleDelete}
+          >
+            Delete
+          </Button>
+        </div>
+      </div>
+    </form>
   )
 }

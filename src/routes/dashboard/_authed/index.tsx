@@ -28,6 +28,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { useHostConnected } from '@/providers/host-connection'
+import { useStablePaginatedQuery } from '@/hooks/use-stable-query'
 
 export const Route = createFileRoute('/dashboard/_authed/')({
   validateSearch: zodValidator(
@@ -57,7 +58,7 @@ function RouteComponent() {
     results: files,
     status: filesStatus,
     loadMore: loadMoreFiles,
-  } = usePaginatedQuery(
+  } = useStablePaginatedQuery(
     api.files.listPage,
     selectedTagIds.length ? { tagIds: selectedTagIds } : {},
     { initialNumItems: 24 },
