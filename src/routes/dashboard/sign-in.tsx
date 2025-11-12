@@ -5,14 +5,16 @@ import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { useHostUrl } from '@/providers/host-url'
+import { useHostConnected } from '@/providers/host-connection'
 
 export const Route = createFileRoute('/dashboard/sign-in')({
   component: RouteComponent,
-  loader: ({ context }) => context,
 })
 
 function RouteComponent() {
-  const { hostUrl, authClient } = Route.useRouteContext()
+  const { hostUrl } = useHostUrl()
+  const { authClient } = useHostConnected()
   const navigate = useNavigate()
 
   const form = useForm({

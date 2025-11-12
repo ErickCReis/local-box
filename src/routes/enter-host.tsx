@@ -5,14 +5,16 @@ import * as z from 'zod'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { useClientStore } from '@/lib/client-store'
+import { useHostUrl } from '@/providers/host-url'
 
 export const Route = createFileRoute('/enter-host')({
   component: RouteComponent,
 })
 
+const pingSchema = z.object({ message: z.literal('pong') })
+
 function RouteComponent() {
-  const { hostUrl, setHostUrl } = useClientStore()
+  const { hostUrl, setHostUrl } = useHostUrl()
   const navigate = useNavigate()
 
   const fetchHostMutation = useMutation({
@@ -22,7 +24,8 @@ function RouteComponent() {
         throw new Error(`Failed to ping host: ${response.statusText}`)
       }
       const data = await response.json()
-      if (data.message !== 'pong') {
+      const safeData = pingSchema.safeParse(data)
+      if (!safeData.success) {
         throw new Error('Host did not respond with pong')
       }
 

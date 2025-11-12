@@ -1,25 +1,17 @@
 import { api } from '@convex/_generated/api'
 import { Navigate, Outlet, createFileRoute } from '@tanstack/react-router'
-import { Authenticated, Unauthenticated, useQuery } from 'convex/react'
+
+import { useStableQuery } from '@/hooks/use-stable-query'
 
 export const Route = createFileRoute('/dashboard/_authed')({
-  component: () => (
-    <>
-      <Authenticated>
-        <AuthedRoute />
-      </Authenticated>
-      <Unauthenticated>
-        <Navigate to="/dashboard/sign-in" />
-      </Unauthenticated>
-    </>
-  ),
+  component: AuthedLayout,
 })
 
-function AuthedRoute() {
-  const user = useQuery(api.auth.getCurrentUser)
+function AuthedLayout() {
+  const user = useStableQuery(api.auth.getCurrentUser)
 
   if (user === undefined) {
-    return null
+    return <div>Loading...</div>
   }
 
   if (user === null) {

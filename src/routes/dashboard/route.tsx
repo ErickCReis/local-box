@@ -1,30 +1,23 @@
-import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
-import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
-import { clientStore } from '@/lib/client-store'
+import { Navigate, Outlet, createFileRoute } from '@tanstack/react-router'
+import { useHostUrl } from '@/providers/host-url'
+import { HostConnectionProvider } from '@/providers/host-connection'
 
 export const Route = createFileRoute('/dashboard')({
-  ssr: false,
   component: DashboardLayout,
-  beforeLoad: () => {
-    const state = clientStore.state
-    if (!state.hostUrl) {
-      throw redirect({ to: '/enter-host' })
-    }
-
-    return state
-  },
-  loader: ({ context }) => context,
 })
 
 function DashboardLayout() {
-  const { convexQueryClient, authClient } = Route.useRouteContext()
+  const { hostUrl } = useHostUrl()
+
+  console.log('hostUrl', hostUrl)
+
+  if (!hostUrl) {
+    return <Navigate to="/enter-host" />
+  }
 
   return (
-    <ConvexBetterAuthProvider
-      client={convexQueryClient.convexClient}
-      authClient={authClient}
-    >
+    <HostConnectionProvider hostUrl={hostUrl}>
       <Outlet />
-    </ConvexBetterAuthProvider>
+    </HostConnectionProvider>
   )
 }

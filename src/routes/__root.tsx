@@ -9,6 +9,7 @@ import { Toaster } from 'sonner'
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
 import type { QueryClient } from '@tanstack/react-query'
 import appCss from '@/styles/app.css?url'
+import { HostUrlProvider } from '@/providers/host-url'
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   {
@@ -61,7 +62,9 @@ function RootComponent() {
       </head>
       <body className="min-h-screen antialiased" suppressHydrationWarning>
         <ThemeProvider />
-        <Outlet />
+        <HostUrlProvider>
+          <Outlet />
+        </HostUrlProvider>
         <Scripts />
         <Toaster />
         <TanStackRouterDevtools />

@@ -27,6 +27,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { useHostConnected } from '@/providers/host-connection'
 
 export const Route = createFileRoute('/dashboard/_authed/')({
   validateSearch: zodValidator(
@@ -41,11 +42,10 @@ export const Route = createFileRoute('/dashboard/_authed/')({
     middlewares: [stripSearchParams({ tags: [] })],
   },
   component: RouteComponent,
-  loader: ({ context }) => context,
 })
 
 function RouteComponent() {
-  const { authClient } = Route.useRouteContext()
+  const { authClient } = useHostConnected()
   const { tags: selectedTagIds } = Route.useSearch()
   const navigate = useNavigate()
   const convex = useConvex()

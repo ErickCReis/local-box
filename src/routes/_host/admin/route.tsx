@@ -1,10 +1,10 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { createServerFn } from '@tanstack/react-start'
-import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
 import { toast } from 'sonner'
-import { clientStore } from '@/lib/client-store'
 import { DOCKER } from '@/lib/docker'
 import { getHostStore } from '@/lib/host-store'
+import { useHostUrl } from '@/providers/host-url'
+import { HostConnectionProvider } from '@/providers/host-connection'
 
 export const setupStatus = createServerFn().handler(async () => {
   const dockerStatus = await DOCKER.getDockerStatus()
@@ -18,24 +18,8 @@ export const setupStatus = createServerFn().handler(async () => {
 })
 
 export const Route = createFileRoute('/_host/admin')({
-  ssr: false,
   component: AdminLayout,
-  beforeLoad: async () => {
-    const state = clientStore.state
-    if (!state.convexQueryClient) {
-      throw redirect({ to: '/setup' })
-    }
-
-    // Attach auth token to convex client if available
-    const response = await state.authClient.getSession().catch(() => null)
-
-    const context = {
-      ...state,
-      user: response?.data?.user,
-    }
-    return context
-  },
-  loader: async ({ context }) => {
+  loader: async () => {
     const { dockerStatus, tunnelUrl } = await setupStatus()
     if (!dockerStatus) {
       toast.error('Docker is not running')
@@ -48,21 +32,22 @@ export const Route = createFileRoute('/_host/admin')({
     // }
 
     return {
-      ...context,
       tunnelUrl,
     }
   },
 })
 
 function AdminLayout() {
-  const { convexQueryClient, authClient } = Route.useRouteContext()
+  const { hostUrl, setHostUrl } = useHostUrl()
+
+  if (!hostUrl) {
+    setHostUrl('http://localhost:8080')
+    return null
+  }
 
   return (
-    <ConvexBetterAuthProvider
-      client={convexQueryClient.convexClient}
-      authClient={authClient}
-    >
+    <HostConnectionProvider hostUrl={hostUrl}>
       <Outlet />
-    </ConvexBetterAuthProvider>
+    </HostConnectionProvider>
   )
 }
