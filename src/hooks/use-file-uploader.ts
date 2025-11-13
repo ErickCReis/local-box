@@ -3,6 +3,18 @@ import { useAction, useMutation } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import type { Id } from '@convex/_generated/dataModel'
 
+// Set to false to disable all logging
+const DEBUG = false as boolean
+const log = (...args: Array<unknown>) => {
+  if (!DEBUG) return
+  console.log('[useFileUploader]', ...args)
+}
+
+const logError = (...args: Array<unknown>) => {
+  if (!DEBUG) return
+  console.error('[useFileUploader]', ...args)
+}
+
 type UploadStatus =
   | 'queued'
   | 'uploading'
@@ -14,7 +26,6 @@ type UploadStatus =
 export type UploadQueueItem = {
   id: string
   file: File
-  progress: number
   status: UploadStatus
   error?: string
   previewUrl?: string
@@ -33,7 +44,6 @@ export type UseFileUploaderResult = {
   retry: (id: string) => void
   clearCompleted: () => void
   hasActiveUploads: boolean
-  overallProgress: number
 }
 
 function makeId() {
@@ -48,20 +58,32 @@ export function useFileUploader(
   const saveUploadedFile = useMutation(api.files.saveUploadedFile)
 
   const [items, setItems] = useState<Array<UploadQueueItem>>([])
-  const inFlight = useRef<Map<string, XMLHttpRequest>>(new Map())
+  const inFlight = useRef<Map<string, AbortController>>(new Map())
+  const itemsRef = useRef<Array<UploadQueueItem>>([])
 
   const addFiles = useCallback((files: Array<File>) => {
+    log('Adding files:', files.length)
     setItems((prev) => {
-      const next: Array<UploadQueueItem> = files.map((file) => ({
-        id: makeId(),
-        file,
-        progress: 0,
-        status: 'queued',
-        previewUrl: file.type.startsWith('image/')
-          ? URL.createObjectURL(file)
-          : undefined,
-      }))
-      return [...prev, ...next]
+      const next: Array<UploadQueueItem> = files.map((file) => {
+        const id = makeId()
+        log('Queued file:', {
+          id,
+          name: file.name,
+          size: file.size,
+          type: file.type,
+        })
+        return {
+          id,
+          file,
+          status: 'queued',
+          previewUrl: file.type.startsWith('image/')
+            ? URL.createObjectURL(file)
+            : undefined,
+        }
+      })
+      const updated = [...prev, ...next]
+      itemsRef.current = updated
+      return updated
     })
   }, [])
 
@@ -76,10 +98,12 @@ export function useFileUploader(
   )
 
   const cancel = useCallback((id: string) => {
-    const xhr = inFlight.current.get(id)
-    if (xhr) {
-      xhr.abort()
+    log('Canceling upload:', id)
+    const controller = inFlight.current.get(id)
+    if (controller) {
+      controller.abort()
       inFlight.current.delete(id)
+      log('Upload aborted:', id)
     }
     setItems((prev) =>
       prev.map((it) => (it.id === id ? { ...it, status: 'canceled' } : it)),
@@ -87,11 +111,10 @@ export function useFileUploader(
   }, [])
 
   const retry = useCallback((id: string) => {
+    log('Retrying upload:', id)
     setItems((prev) =>
       prev.map((it) =>
-        it.id === id
-          ? { ...it, status: 'queued', progress: 0, error: undefined }
-          : it,
+        it.id === id ? { ...it, status: 'queued', error: undefined } : it,
       ),
     )
   }, [])
@@ -126,112 +149,165 @@ export function useFileUploader(
     [items],
   )
 
-  const overallProgress = useMemo(() => {
-    if (items.length === 0) return 0
-    const total = items.reduce((acc, it) => acc + it.progress, 0)
-    return Math.round(total / items.length)
-  }, [items])
-
   // Process queue with concurrency
   useEffect(() => {
     const uploadingCount = items.filter(
       (i) => i.status === 'uploading' || i.status === 'saving',
     ).length
     const available = Math.max(0, concurrent - uploadingCount)
-    if (available <= 0) return
+    const queuedCount = items.filter((i) => i.status === 'queued').length
+
+    log('Queue status:', {
+      total: items.length,
+      queued: queuedCount,
+      uploading: uploadingCount,
+      available,
+      concurrent,
+    })
+
+    if (available <= 0) {
+      log('No available slots, skipping')
+      return
+    }
 
     const nextBatch = items
       .filter((i) => i.status === 'queued')
       .slice(0, available)
-    if (nextBatch.length === 0) return
+    if (nextBatch.length === 0) {
+      log('No queued items to process')
+      return
+    }
+
+    log('Processing batch:', nextBatch.length)
 
     for (const queued of nextBatch) {
       ;(async () => {
+        log('Starting upload:', {
+          id: queued.id,
+          name: queued.file.name,
+          size: queued.file.size,
+          type: queued.file.type,
+        })
         // mark as uploading
         setItems((prev) =>
           prev.map((it) =>
-            it.id === queued.id
-              ? { ...it, status: 'uploading', progress: 0 }
-              : it,
+            it.id === queued.id ? { ...it, status: 'uploading' } : it,
           ),
         )
+        const controller = new AbortController()
+        inFlight.current.set(queued.id, controller)
         try {
+          log('Generating upload URL...', queued.id)
           const url = await generateUploadUrl({})
-          const storageId = await new Promise<string>((resolve, reject) => {
-            const xhr = new XMLHttpRequest()
-            inFlight.current.set(queued.id, xhr)
-            xhr.open('POST', url)
-            xhr.setRequestHeader(
-              'Content-Type',
-              queued.file.type || 'application/octet-stream',
-            )
-            xhr.upload.onprogress = (e) => {
-              if (e.lengthComputable) {
-                const pct = Math.round((e.loaded / e.total) * 100)
-                setItems((prev) =>
-                  prev.map((it) =>
-                    it.id === queued.id ? { ...it, progress: pct } : it,
-                  ),
-                )
-              }
-            }
-            xhr.onerror = () => reject(new Error('Network error'))
-            xhr.onabort = () => reject(new Error('aborted'))
-            xhr.onload = () => {
-              try {
-                const parsed = JSON.parse(xhr.responseText) as {
-                  storageId: string
-                }
-                if (!parsed.storageId) {
-                  reject(new Error('Invalid upload response'))
-                  return
-                }
-                resolve(parsed.storageId)
-              } catch (e) {
-                reject(new Error('Invalid server response'))
-              }
-            }
-            xhr.send(queued.file)
+          log('Upload URL generated:', {
+            id: queued.id,
+            url: url.substring(0, 50) + '...',
           })
 
+          log('Starting fetch request...', {
+            id: queued.id,
+            contentType: queued.file.type || 'application/octet-stream',
+            fileSize: queued.file.size,
+          })
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'Content-Type': queued.file.type || 'application/octet-stream',
+            },
+            body: queued.file,
+            signal: controller.signal,
+          })
+
+          log('Fetch response received:', {
+            id: queued.id,
+            ok: response.ok,
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries(response.headers.entries()),
+          })
+
+          if (!response.ok) {
+            const text = await response.text()
+            logError('Upload failed:', {
+              id: queued.id,
+              status: response.status,
+              statusText: response.statusText,
+              body: text,
+            })
+            throw new Error(
+              `Upload failed: ${response.status} ${response.statusText}`,
+            )
+          }
+
+          const parsed = (await response.json()) as {
+            storageId: string
+          }
+          log('Upload response parsed:', {
+            id: queued.id,
+            storageId: parsed.storageId,
+            hasStorageId: !!parsed.storageId,
+          })
+
+          if (!parsed.storageId) {
+            logError('Invalid upload response:', {
+              id: queued.id,
+              parsed,
+            })
+            throw new Error('Invalid upload response')
+          }
+
           // move to saving
+          log('Moving to saving state:', queued.id)
           setItems((prev) =>
             prev.map((it) =>
-              it.id === queued.id
-                ? { ...it, status: 'saving', progress: 100 }
-                : it,
+              it.id === queued.id ? { ...it, status: 'saving' } : it,
             ),
           )
 
           inFlight.current.delete(queued.id)
 
+          log('Saving file metadata...', {
+            id: queued.id,
+            storageId: parsed.storageId,
+            filename: queued.file.name,
+            contentType: queued.file.type,
+            size: queued.file.size,
+            tagIds: options.defaultTagIds ?? [],
+          })
           await saveUploadedFile({
-            storageId: storageId as any,
+            storageId: parsed.storageId as any,
             filename: queued.file.name,
             contentType: queued.file.type,
             size: queued.file.size,
             tagIds: (options.defaultTagIds ?? []) as any,
           })
 
+          log('Upload completed successfully:', queued.id)
           setItems((prev) =>
             prev.map((it) =>
-              it.id === queued.id
-                ? { ...it, status: 'done', progress: 100 }
-                : it,
+              it.id === queued.id ? { ...it, status: 'done' } : it,
             ),
           )
         } catch (err) {
+          const isAborted = err instanceof Error && err.name === 'AbortError'
           const message = err instanceof Error ? err.message : 'Upload failed'
+          logError('Upload error:', {
+            id: queued.id,
+            error: err,
+            isAborted,
+            message,
+            errorName: err instanceof Error ? err.name : undefined,
+            errorStack: err instanceof Error ? err.stack : undefined,
+          })
           setItems((prev) =>
             prev.map((it) =>
               it.id === queued.id
                 ? {
                     ...it,
-                    status:
-                      message === 'aborted'
-                        ? ('canceled' as UploadStatus)
-                        : ('error' as UploadStatus),
-                    error: message === 'aborted' ? undefined : message,
+                    status: isAborted
+                      ? ('canceled' as UploadStatus)
+                      : ('error' as UploadStatus),
+                    error: isAborted ? undefined : message,
                   }
                 : it,
             ),
@@ -248,21 +324,30 @@ export function useFileUploader(
     options.defaultTagIds,
   ])
 
-  // Cleanup object URLs on unmount
+  // Keep itemsRef in sync with items state
+  useEffect(() => {
+    itemsRef.current = items
+  }, [items])
+
+  // Cleanup on unmount only
   useEffect(() => {
     return () => {
-      for (const it of items) {
-        if (it.previewUrl) URL.revokeObjectURL(it.previewUrl)
+      log('Component unmounting, cleaning up...')
+      // Clean up all preview URLs
+      for (const it of itemsRef.current) {
+        if (it.previewUrl) {
+          URL.revokeObjectURL(it.previewUrl)
+        }
       }
-      // abort any inflight
-      for (const xhr of inFlight.current.values()) {
+      // Abort any inflight requests on unmount
+      for (const controller of inFlight.current.values()) {
         try {
-          xhr.abort()
+          controller.abort()
         } catch {}
       }
       inFlight.current.clear()
     }
-  }, [items])
+  }, []) // Empty deps - only run on unmount
 
   return {
     items,
@@ -272,6 +357,5 @@ export function useFileUploader(
     retry,
     clearCompleted,
     hasActiveUploads,
-    overallProgress,
   }
 }

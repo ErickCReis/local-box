@@ -1,8 +1,6 @@
 import { useMemo } from 'react'
 import type { UploadQueueItem } from '@/hooks/use-file-uploader'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
 
 export type UploadQueueProps = {
   items: Array<UploadQueueItem>
@@ -33,87 +31,86 @@ export function UploadQueue({
   if (items.length === 0) return null
 
   return (
-    <Card className="border-primary/20">
-      <CardHeader className="flex flex-row items-center justify-between gap-4">
-        <CardTitle>Uploads</CardTitle>
-        {hasCompleted && onClearCompleted ? (
+    <div className="space-y-4">
+      {hasCompleted && onClearCompleted ? (
+        <div className="flex justify-end">
           <Button variant="ghost" size="sm" onClick={onClearCompleted}>
             Clear completed
           </Button>
-        ) : null}
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="grid grid-cols-[48px_1fr_auto] items-center gap-4"
-          >
-            <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-md border bg-muted/30">
-              {item.previewUrl ? (
-                <img
-                  src={item.previewUrl}
-                  alt=""
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="text-xs text-muted-foreground">FILE</div>
-              )}
-            </div>
+        </div>
+      ) : null}
+      <div className="max-h-[400px] overflow-y-auto">
+        <div className="space-y-3">
+          {items.map((item, index) => (
+            <div key={item.id}>
+              <div className="grid grid-cols-[48px_1fr_auto] items-center gap-3 py-2">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/30">
+                  {item.previewUrl ? (
+                    <img
+                      src={item.previewUrl}
+                      alt=""
+                      className="h-full w-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-xs text-muted-foreground">FILE</div>
+                  )}
+                </div>
 
-            <div className="min-w-0">
-              <div className="flex items-center justify-between">
-                <div className="truncate text-sm font-medium">
-                  {item.file.name}
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <div className="truncate text-sm font-medium">
+                      {item.file.name}
+                    </div>
+                    <div className="shrink-0 text-xs text-muted-foreground">
+                      {formatBytes(item.file.size)}
+                    </div>
+                  </div>
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {item.status === 'queued' && 'Queued'}
+                    {item.status === 'uploading' && 'Uploading...'}
+                    {item.status === 'saving' && 'Saving...'}
+                    {item.status === 'done' && 'Complete'}
+                    {item.status === 'error' && (
+                      <span className="text-destructive">
+                        {item.error || 'Error'}
+                      </span>
+                    )}
+                    {item.status === 'canceled' && 'Canceled'}
+                  </div>
                 </div>
-                <div className="ml-3 shrink-0 text-xs text-muted-foreground">
-                  {formatBytes(item.file.size)}
-                </div>
-              </div>
-              <div className="mt-2 flex items-center gap-3">
-                <Progress
-                  value={item.progress}
-                  aria-valuenow={item.progress}
-                  className="h-2"
-                />
-                <div className="text-xs tabular-nums text-muted-foreground w-10 text-right">
-                  {item.progress}%
-                </div>
-              </div>
-              <div className="mt-1 text-xs text-muted-foreground">
-                {item.status === 'queued' && 'Queued'}
-                {item.status === 'uploading' && 'Uploading...'}
-                {item.status === 'saving' && 'Saving...'}
-                {item.status === 'done' && 'Complete'}
-                {item.status === 'error' && (item.error || 'Error')}
-                {item.status === 'canceled' && 'Canceled'}
-              </div>
-            </div>
 
-            <div className="flex items-center gap-2">
-              {(item.status === 'queued' ||
-                item.status === 'uploading' ||
-                item.status === 'saving') && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onCancel(item.id)}
-                >
-                  Cancel
-                </Button>
-              )}
-              {item.status === 'error' && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => onRetry(item.id)}
-                >
-                  Retry
-                </Button>
+                <div className="flex shrink-0 items-center gap-2">
+                  {(item.status === 'queued' ||
+                    item.status === 'uploading' ||
+                    item.status === 'saving') && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onCancel(item.id)}
+                      className="h-8 px-3"
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                  {item.status === 'error' && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onRetry(item.id)}
+                      className="h-8 px-3"
+                    >
+                      Retry
+                    </Button>
+                  )}
+                </div>
+              </div>
+              {index < items.length - 1 && (
+                <div className="border-t border-border/50" />
               )}
             </div>
-          </div>
-        ))}
-      </CardContent>
-    </Card>
+          ))}
+        </div>
+      </div>
+    </div>
   )
 }

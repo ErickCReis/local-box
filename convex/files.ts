@@ -157,22 +157,7 @@ export const listPage = query({
       const page = await Promise.all(
         pageResult.page.map(async (file) => {
           const tags = await loadTagsForFile(file._id)
-          return {
-            file: {
-              _id: file._id,
-              _creationTime: file._creationTime,
-              filename: file.filename,
-              contentType: file.contentType ?? undefined,
-              size: file.size,
-              uploaderUserId: file.uploaderUserId ?? undefined,
-            },
-            tags: tags.map((t) => ({
-              _id: t._id,
-              _creationTime: t._creationTime,
-              name: t.name,
-              color: t.color ?? undefined,
-            })),
-          }
+          return { file, tags }
         }),
       )
       return {
@@ -194,22 +179,7 @@ export const listPage = query({
       const page = await Promise.all(
         files.map(async (file) => {
           const tags = await loadTagsForFile(file._id)
-          return {
-            file: {
-              _id: file._id,
-              _creationTime: file._creationTime,
-              filename: file.filename,
-              contentType: file.contentType ?? undefined,
-              size: file.size,
-              uploaderUserId: file.uploaderUserId ?? undefined,
-            },
-            tags: tags.map((t) => ({
-              _id: t._id,
-              _creationTime: t._creationTime,
-              name: t.name,
-              color: t.color ?? undefined,
-            })),
-          }
+          return { file, tags }
         }),
       )
       return {
@@ -241,23 +211,10 @@ export const listPage = query({
         const fileTagIdSet = new Set(mappings.map((m) => m.tagId))
         const hasAll = tagIds.every((id) => fileTagIdSet.has(id))
         if (!hasAll) return null
-        const tags = await Promise.all(mappings.map((m) => ctx.db.get(m.tagId)))
-        return {
-          file: {
-            _id: file._id,
-            _creationTime: file._creationTime,
-            filename: file.filename,
-            contentType: file.contentType ?? undefined,
-            size: file.size,
-            uploaderUserId: file.uploaderUserId ?? undefined,
-          },
-          tags: tags.filter(Boolean).map((t) => ({
-            _id: t._id,
-            _creationTime: t._creationTime,
-            name: t.name,
-            color: t.color ?? undefined,
-          })),
-        }
+        const tags = (
+          await Promise.all(mappings.map((m) => ctx.db.get(m.tagId)))
+        ).filter(Boolean)
+        return { file, tags }
       }),
     )
     const page = filtered.filter(Boolean)

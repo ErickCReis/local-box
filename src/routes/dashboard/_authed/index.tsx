@@ -128,7 +128,6 @@ function RouteComponent() {
           newTagOpen={newTagOpen}
           setNewTagOpen={setNewTagOpen}
           hasActiveUploads={uploader.hasActiveUploads}
-          overallProgress={uploader.overallProgress}
           onOpenUploads={() => setUploadsOpen(true)}
           onSignOut={() => {
             authClient.signOut().then(() => {
@@ -160,7 +159,7 @@ function RouteComponent() {
       />
 
       <FileGrid
-        rows={files as any}
+        rows={files}
         allTags={tags}
         onSetTags={onSetTags}
         onDownload={handleDownload}
@@ -175,7 +174,6 @@ function RouteComponent() {
             multiple
             title="Drag & drop files to upload"
             description="or click to browse"
-            className="rounded-md border-2 border-dashed border-muted-foreground/30 bg-background/40 p-4"
           />
         }
       />

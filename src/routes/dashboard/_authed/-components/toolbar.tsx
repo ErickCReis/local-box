@@ -9,7 +9,6 @@ type Props = {
   newTagOpen: boolean
   setNewTagOpen: (open: boolean) => void
   hasActiveUploads: boolean
-  overallProgress: number
   onOpenUploads: () => void
   onSignOut: () => void
 }
@@ -20,7 +19,6 @@ export function Toolbar({
   newTagOpen,
   setNewTagOpen,
   hasActiveUploads,
-  overallProgress,
   onOpenUploads,
   onSignOut,
 }: Props) {
@@ -40,9 +38,7 @@ export function Toolbar({
         size="icon"
         aria-label="Open uploads"
         onClick={onOpenUploads}
-        title={
-          hasActiveUploads ? `Uploading… ${overallProgress}%` : 'Open uploads'
-        }
+        title={hasActiveUploads ? 'Uploading…' : 'Open uploads'}
       >
         <div className="relative">
           {hasActiveUploads ? (
