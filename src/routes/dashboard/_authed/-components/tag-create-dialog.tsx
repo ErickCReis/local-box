@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useForm } from '@tanstack/react-form'
+import * as z from 'zod'
 import {
   Dialog,
   DialogContent,
@@ -7,7 +8,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { ColorPicker } from '@/components/ui/color-picker'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { ColorPicker } from '@/components/color-picker'
 
 type Props = {
   open: boolean
@@ -16,42 +19,89 @@ type Props = {
 }
 
 export function TagCreateDialog({ open, onOpenChange, onCreate }: Props) {
-  const [name, setName] = useState('')
-  const [color, setColor] = useState<string>('')
-  const canCreate = useMemo(() => name.trim().length > 0, [name])
-  const handleCreate = async () => {
-    if (!canCreate) return
-    await onCreate(name.trim(), color.trim() || undefined)
-    setName('')
-    setColor('')
-    onOpenChange(false)
-  }
+  const form = useForm({
+    defaultValues: {
+      name: '',
+      color: '',
+    },
+    onSubmit: async ({ value }) => {
+      await onCreate(value.name.trim(), value.color.trim() || undefined)
+      form.reset()
+      onOpenChange(false)
+    },
+    validators: {
+      onSubmit: z.object({
+        name: z.string().min(1, 'Name is required'),
+        color: z.string(),
+      }),
+    },
+  })
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Create Tag</DialogTitle>
         </DialogHeader>
-        <div className="grid gap-3 py-2">
-          <label className="grid gap-1">
-            <span className="text-sm">Name</span>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g., invoices"
-              className="border rounded-md px-2 py-1"
-            />
-          </label>
-          <div className="grid gap-2">
-            <span className="text-sm">Color (optional)</span>
-            <ColorPicker value={color} onChange={setColor} />
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            form.handleSubmit()
+          }}
+        >
+          <div className="grid gap-3 py-2">
+            <form.Field name="name">
+              {(field) => (
+                <div className="grid gap-1">
+                  <Label htmlFor={field.name} className="text-sm">
+                    Name
+                  </Label>
+                  <Input
+                    id={field.name}
+                    name={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(e) => field.handleChange(e.target.value)}
+                    placeholder="e.g., invoices"
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="text-sm text-red-500">
+                      {field.state.meta.errors[0]?.message}
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
+            <form.Field name="color">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name} className="text-sm">
+                    Color (optional)
+                  </Label>
+                  <ColorPicker
+                    value={field.state.value}
+                    onChange={(color) => field.handleChange(color)}
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="text-sm text-red-500">
+                      {field.state.meta.errors[0]?.message}
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
           </div>
-        </div>
-        <DialogFooter>
-          <Button onClick={handleCreate} disabled={!canCreate}>
-            Create
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <form.Subscribe>
+              {(state) => (
+                <Button type="submit" disabled={!state.canSubmit || state.isSubmitting}>
+                  {state.isSubmitting ? 'Creating...' : 'Create'}
+                </Button>
+              )}
+            </form.Subscribe>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   )

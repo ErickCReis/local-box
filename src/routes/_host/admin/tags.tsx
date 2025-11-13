@@ -8,7 +8,7 @@ import { api } from '@/../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { ColorPicker } from '@/components/ui/color-picker'
+import { ColorPicker } from '@/components/color-picker'
 
 export const Route = createFileRoute('/_host/admin/tags')({
   component: TagsPage,
@@ -198,11 +198,6 @@ function TagEditForm({
     await onDelete({ tagId: tag._id })
   }
 
-  // Check if form is dirty
-  const isDirty =
-    editForm.state.values.name.trim() !== tag.name ||
-    (editForm.state.values.color.trim() || '') !== (tag.color || '')
-
   return (
     <form
       onSubmit={(e) => {
@@ -260,7 +255,7 @@ function TagEditForm({
                 type="submit"
                 size="sm"
                 variant="outline"
-                disabled={!isDirty || state.isSubmitting}
+                disabled={!state.isDirty || state.isSubmitting}
               >
                 {state.isSubmitting ? 'Saving...' : 'Save'}
               </Button>
