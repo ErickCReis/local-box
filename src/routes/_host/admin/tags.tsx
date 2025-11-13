@@ -8,6 +8,7 @@ import { api } from '@/../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { ColorPicker } from '@/components/ui/color-picker'
 
 export const Route = createFileRoute('/_host/admin/tags')({
   component: TagsPage,
@@ -81,13 +82,9 @@ function TagsPage() {
                 {(field) => (
                   <>
                     <Label htmlFor={field.name}>Color (optional)</Label>
-                    <Input
-                      id={field.name}
-                      name={field.name}
+                    <ColorPicker
                       value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(e) => field.handleChange(e.target.value)}
-                      placeholder="#A3E635"
+                      onChange={(color) => field.handleChange(color)}
                     />
                     {field.state.meta.errors.length > 0 && (
                       <p className="text-sm text-red-500">
@@ -242,12 +239,9 @@ function TagEditForm({
               {(field) => (
                 <>
                   <Label htmlFor={field.name}>Color</Label>
-                  <Input
-                    id={field.name}
-                    name={field.name}
+                  <ColorPicker
                     value={field.state.value}
-                    onBlur={field.handleBlur}
-                    onChange={(e) => field.handleChange(e.target.value)}
+                    onChange={(color) => field.handleChange(color)}
                   />
                   {field.state.meta.errors.length > 0 && (
                     <p className="text-sm text-red-500">

@@ -1,7 +1,7 @@
 import { useRef } from 'react'
+import { Loader2Icon, UploadIcon } from 'lucide-react'
 import { TagCreateDialog } from './tag-create-dialog'
 import { Button } from '@/components/ui/button'
-import { Loader2Icon, UploadIcon } from 'lucide-react'
 
 type Props = {
   onSelectFiles: (files: FileList | null) => void
@@ -41,9 +41,7 @@ export function Toolbar({
         aria-label="Open uploads"
         onClick={onOpenUploads}
         title={
-          hasActiveUploads
-            ? `Uploading… ${overallProgress}%`
-            : 'Open uploads'
+          hasActiveUploads ? `Uploading… ${overallProgress}%` : 'Open uploads'
         }
       >
         <div className="relative">

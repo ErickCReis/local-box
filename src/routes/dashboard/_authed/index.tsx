@@ -5,12 +5,7 @@ import {
 } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 import { api } from '@convex/_generated/api'
-import {
-  useConvex,
-  useMutation,
-  usePaginatedQuery,
-  useQuery,
-} from 'convex/react'
+import { useConvex, useMutation, useQuery } from 'convex/react'
 import { zodValidator } from '@tanstack/zod-adapter'
 import * as z from 'zod'
 import { FileGrid } from './-components/file-grid'
