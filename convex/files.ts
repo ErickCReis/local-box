@@ -1,6 +1,7 @@
 import { v } from 'convex/values'
 import { paginationOptsValidator } from 'convex/server'
 import { getManyViaOrThrow } from 'convex-helpers/server/relationships'
+import { colorForTagName } from '../src/lib/tag-colors'
 import { action, mutation, query } from './_generated/server'
 import type { Id } from './_generated/dataModel'
 
@@ -29,9 +30,45 @@ export const saveUploadedFile = mutation({
       uploaderUserId: args.uploaderUserId,
     })
 
+    // Extract file extension and create/get tag for it
+    const lastDotIndex = args.filename.lastIndexOf('.')
+    let extensionTagId: Id<'tags'> | null = null
+    if (lastDotIndex !== -1 && lastDotIndex < args.filename.length - 1) {
+      const ext = args.filename.substring(lastDotIndex + 1).toLowerCase()
+      if (ext.length > 0) {
+        // Lookup existing tag by extension name
+        const existingTag = await ctx.db
+          .query('tags')
+          .withIndex('by_name', (q) => q.eq('name', ext))
+          .unique()
+          .catch(() => null)
+
+        if (existingTag) {
+          extensionTagId = existingTag._id
+        } else {
+          // Create new tag with deterministic color
+          const color = colorForTagName(ext)
+          extensionTagId = await ctx.db.insert('tags', {
+            name: ext,
+            color,
+          })
+        }
+      }
+    }
+
+    // Merge extension tag with provided tagIds
+    const allTagIds = new Set<Id<'tags'>>()
+    if (extensionTagId) {
+      allTagIds.add(extensionTagId)
+    }
     if (args.tagIds && args.tagIds.length > 0) {
+      args.tagIds.forEach((tagId) => allTagIds.add(tagId))
+    }
+
+    // Insert fileTags mappings for all tags
+    if (allTagIds.size > 0) {
       await Promise.all(
-        args.tagIds.map((tagId) =>
+        Array.from(allTagIds).map((tagId) =>
           ctx.db.insert('fileTags', {
             fileId,
             tagId,

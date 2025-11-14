@@ -167,3 +167,15 @@ export function isValidHexColor(hex: string): boolean {
   return /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(hex)
 }
 
+/**
+ * Generates a deterministic color for a tag name using djb2 hash algorithm.
+ * Same tag name will always get the same color.
+ * Uses ALL_TAG_COLORS palette.
+ */
+export function colorForTagName(name: string): string {
+  let hash = 5381
+  for (const ch of name) {
+    hash = (hash * 33) ^ ch.charCodeAt(0)
+  }
+  return ALL_TAG_COLORS[Math.abs(hash) % ALL_TAG_COLORS.length]
+}
