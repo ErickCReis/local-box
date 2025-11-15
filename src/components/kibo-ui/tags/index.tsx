@@ -112,7 +112,7 @@ export const TagsTrigger = ({
       variant="outline"
       {...props}
     >
-      <div className="flex flex-wrap items-center gap-1">
+      <div className="flex items-center gap-1">
         {children}
         {!hidePlaceholder && (
           <span className="px-2 py-px text-muted-foreground">

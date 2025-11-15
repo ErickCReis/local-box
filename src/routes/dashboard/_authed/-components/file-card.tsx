@@ -6,14 +6,14 @@ import {
   Trash2Icon,
 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useConvex, useMutation, useQuery } from 'convex/react'
+import { api } from '@convex/_generated/api'
 import { FileIcon } from './file-icon'
 import type { Doc, Id } from '@convex/_generated/dataModel'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import { cn } from '@/lib/utils'
-import { useQuery } from 'convex/react'
-import { api } from '@convex/_generated/api'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +31,7 @@ import {
   TagsTrigger,
   TagsValue,
 } from '@/components/kibo-ui/tags'
+import { useFileSelection } from '@/routes/dashboard/_authed/-providers/file-selection'
 
 type Tag = Doc<'tags'>
 
@@ -39,24 +40,11 @@ type FileItem = Omit<Doc<'files'>, 'storageId'>
 type Props = {
   file: FileItem
   tags: Array<Tag>
-  allTags: Array<Tag>
-  onSetTags: (fileId: Id<'files'>, tagIds: Array<Id<'tags'>>) => void
-  onDownload: (fileId: Id<'files'>) => void
-  onDelete: (fileId: Id<'files'>) => void
-  isSelected?: boolean
-  onToggleSelection?: (fileId: Id<'files'>) => void
 }
 
-export function FileCard({
-  file,
-  tags,
-  allTags,
-  onSetTags,
-  onDownload,
-  onDelete,
-  isSelected = false,
-  onToggleSelection,
-}: Props) {
+export function FileCard({ file, tags }: Props) {
+  const { selectedFileIds, toggleFileSelection } = useFileSelection()
+  const isSelected = selectedFileIds.has(file._id)
   const kb = Math.max(1, Math.round(file.size / 1024))
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<Set<Id<'tags'>>>(new Set())
@@ -65,22 +53,40 @@ export function FileCard({
     api.files.getDownloadUrl,
     isImage ? { fileId: file._id } : 'skip',
   )
+  const allTags = useQuery(api.tags.list, {}) ?? []
+  const setFileTags = useMutation(api.files.setTags)
+  const deleteFile = useMutation(api.files.remove)
+  const convex = useConvex()
+
   useEffect(() => {
     setSelected(new Set(tags.map((t) => t._id)))
   }, [tags, file._id])
-  const remove = (id: Id<'tags'>) => {
+
+  const handleDownload = async () => {
+    const url = await convex.query(api.files.getDownloadUrl, {
+      fileId: file._id,
+    })
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer')
+    }
+  }
+
+  const handleDelete = async () => {
+    await deleteFile({ fileId: file._id })
+  }
+
+  const remove = async (id: Id<'tags'>) => {
     // Prevent removal of system tags
     const tag = tags.find((t) => t._id === id)
     if (tag?.isSystem) return
 
-    setSelected((prev) => {
-      const next = new Set(prev)
-      next.delete(id)
-      onSetTags(file._id, Array.from(next))
-      return next
-    })
+    const next = new Set(selected)
+    next.delete(id)
+    setSelected(next)
+    await setFileTags({ fileId: file._id, tagIds: Array.from(next) })
   }
-  const toggle = (id: Id<'tags'>) => {
+
+  const toggle = async (id: Id<'tags'>) => {
     // Prevent toggling off system tags
     const tag = allTags.find((t) => t._id === id)
     if (tag?.isSystem && selected.has(id)) {
@@ -88,39 +94,33 @@ export function FileCard({
       return
     }
 
-    setSelected((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      onSetTags(file._id, Array.from(next))
-      return next
-    })
+    const next = new Set(selected)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setSelected(next)
+    await setFileTags({ fileId: file._id, tagIds: Array.from(next) })
   }
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)
   }
-  const handleCheckboxChange = (checked: boolean) => {
-    if (onToggleSelection) {
-      onToggleSelection(file._id)
-    }
+  const handleCheckboxChange = () => {
+    toggleFileSelection(file._id)
   }
   return (
     <Card className="group relative p-4">
-      {onToggleSelection && (
-        <div
-          className={cn(
-            'absolute left-2 top-2 transition-opacity',
-            isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
-          )}
-        >
-          <Checkbox
-            checked={isSelected}
-            onCheckedChange={handleCheckboxChange}
-            onClick={(e) => e.stopPropagation()}
-            aria-label={`Select ${file.filename}`}
-          />
-        </div>
-      )}
+      <div
+        className={cn(
+          'absolute left-2 top-2 transition-opacity',
+          isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+        )}
+      >
+        <Checkbox
+          checked={isSelected}
+          onCheckedChange={handleCheckboxChange}
+          onClick={(e) => e.stopPropagation()}
+          aria-label={`Select ${file.filename}`}
+        />
+      </div>
       <div className="flex items-start gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/30">
           {isImage && thumbnailUrl ? (
@@ -147,14 +147,11 @@ export function FileCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" sideOffset={6}>
-                <DropdownMenuItem onClick={() => onDownload(file._id)}>
+                <DropdownMenuItem onClick={handleDownload}>
                   <DownloadIcon />
                   Download
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  variant="destructive"
-                  onClick={() => onDelete(file._id)}
-                >
+                <DropdownMenuItem variant="destructive" onClick={handleDelete}>
                   <Trash2Icon />
                   Delete
                 </DropdownMenuItem>
@@ -166,8 +163,8 @@ export function FileCard({
           </div>
           <Tags open={open} onOpenChange={handleOpenChange}>
             <TagsTrigger
-              className="min-h-8 h-8 p-1.5 rounded-sm border-muted-foreground/30"
-              variant="outline"
+              className="h-8 p-1.5 rounded-sm border-muted-foreground/30 overflow-x-auto overflow-y-clip w-full"
+              variant="ghost"
               hidePlaceholder
             >
               {tags.length === 0 && (
@@ -201,7 +198,11 @@ export function FileCard({
                         key={t._id}
                         value={t.name}
                         onSelect={canToggle ? () => toggle(t._id) : undefined}
-                        className={!canToggle ? 'cursor-not-allowed opacity-75' : undefined}
+                        className={
+                          !canToggle
+                            ? 'cursor-not-allowed opacity-75'
+                            : undefined
+                        }
                       >
                         <div className="flex items-center gap-2">
                           <span

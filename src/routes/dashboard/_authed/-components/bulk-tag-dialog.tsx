@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Check } from 'lucide-react'
-import type { Doc, Id } from '@convex/_generated/dataModel'
+import { useQuery } from 'convex/react'
+import { api } from '@convex/_generated/api'
+import type { Id } from '@convex/_generated/dataModel'
 import {
   Dialog,
   DialogContent,
@@ -13,21 +15,14 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
 
-type Tag = Doc<'tags'>
-
 type Props = {
   open: boolean
   onOpenChange: (open: boolean) => void
-  allTags: Array<Tag>
   onConfirm: (tagIds: Array<Id<'tags'>>) => void
 }
 
-export function BulkTagDialog({
-  open,
-  onOpenChange,
-  allTags,
-  onConfirm,
-}: Props) {
+export function BulkTagDialog({ open, onOpenChange, onConfirm }: Props) {
+  const allTags = useQuery(api.tags.list, {}) ?? []
   const [selected, setSelected] = useState<Set<Id<'tags'>>>(new Set())
   const [searchQuery, setSearchQuery] = useState('')
 

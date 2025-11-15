@@ -1,49 +1,22 @@
 import { FileCard } from './file-card'
 import type { ReactNode } from 'react'
-import type { Doc, Id } from '@convex/_generated/dataModel'
-
-type Tag = Doc<'tags'>
-
-type FileRow = {
-  file: Doc<'files'>
-  tags: Array<Tag>
-}
+import { useFiles } from '@/routes/dashboard/_authed/-providers/files'
 
 type Props = {
-  rows: Array<FileRow>
-  allTags: Array<Tag>
-  onSetTags: (fileId: Id<'files'>, tagIds: Array<Id<'tags'>>) => void
-  onDownload: (fileId: Id<'files'>) => void
-  onDelete: (fileId: Id<'files'>) => void
-  selectedFileIds?: Set<Id<'files'>>
-  onToggleFileSelection?: (fileId: Id<'files'>) => void
   extraStart?: ReactNode
 }
 
-export function FileGrid({
-  rows,
-  allTags,
-  onSetTags,
-  onDownload,
-  onDelete,
-  selectedFileIds,
-  onToggleFileSelection,
-  extraStart,
-}: Props) {
+export function FileGrid({ extraStart }: Props) {
+  const { files } = useFiles()
+
   return (
     <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {extraStart}
-      {rows.map((row) => (
+      {files.map((row) => (
         <FileCard
           key={row.file._id}
           file={row.file}
           tags={row.tags}
-          allTags={allTags}
-          onSetTags={onSetTags}
-          onDownload={onDownload}
-          onDelete={onDelete}
-          isSelected={selectedFileIds?.has(row.file._id) ?? false}
-          onToggleSelection={onToggleFileSelection}
         />
       ))}
     </div>

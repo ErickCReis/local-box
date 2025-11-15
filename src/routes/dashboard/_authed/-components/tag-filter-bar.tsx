@@ -1,5 +1,8 @@
 import { useMemo } from 'react'
 import { CheckIcon, X } from 'lucide-react'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useQuery } from 'convex/react'
+import { api } from '@convex/_generated/api'
 import type { Doc, Id } from '@convex/_generated/dataModel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -22,16 +25,38 @@ const CATEGORY_LABELS: Record<TagCategory, string> = {
   custom: 'Custom',
 }
 
-type Props = {
-  tags: Array<Tag>
-  selectedIds: Array<Id<'tags'>>
-  onToggle: (tagId: Id<'tags'>) => void
-  onClear: () => void
-}
+// Get route reference for useSearch
+const Route = createFileRoute('/dashboard/_authed/')({})
 
-export function TagFilterBar({ tags, selectedIds, onToggle, onClear }: Props) {
+export function TagFilterBar() {
+  const navigate = useNavigate()
+  const tags = useQuery(api.tags.list, {}) ?? []
+  const { tags: selectedIds } = Route.useSearch()
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
   const hasSelection = selectedIds.length > 0
+
+  const onToggle = (tagId: Id<'tags'>) => {
+    const set = new Set(selectedIds)
+    if (set.has(tagId)) set.delete(tagId)
+    else set.add(tagId)
+    const next = Array.from(set)
+    navigate({
+      to: '.',
+      search: (prev) => ({
+        ...prev,
+        tags: next.length ? next : undefined,
+      }),
+      replace: true,
+    })
+  }
+
+  const onClear = () => {
+    navigate({
+      to: '.',
+      search: (prev) => ({ ...prev, tags: undefined }),
+      replace: true,
+    })
+  }
 
   // Group tags by category
   const groupedTags = useMemo(() => {

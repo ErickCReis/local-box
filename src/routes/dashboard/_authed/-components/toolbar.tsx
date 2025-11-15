@@ -1,48 +1,51 @@
+import { useState } from 'react'
 import { Loader2Icon, Tag, Trash2Icon, UploadIcon, X } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router'
+import { useMutation } from 'convex/react'
+import { api } from '@convex/_generated/api'
 import { TagCreateDialog } from './tag-create-dialog'
-import type { Id } from '@convex/_generated/dataModel'
+import { BulkTagDialog } from './bulk-tag-dialog'
 import { Button } from '@/components/ui/button'
+import { useHostConnected } from '@/providers/host-connection'
+import { useFileSelection } from '@/routes/dashboard/_authed/-providers/file-selection'
+import { useUpload } from '@/routes/dashboard/_authed/-providers/upload'
 
-type Props = {
-  onCreateTag: (name: string, color?: string) => Promise<void> | void
-  newTagOpen: boolean
-  setNewTagOpen: (open: boolean) => void
-  hasActiveUploads: boolean
-  onOpenUploads: () => void
-  onSignOut: () => void
-  selectedFileIds?: Set<Id<'files'>>
-  onClearSelection?: () => void
-  onBulkDelete?: () => void
-  onBulkAddTags?: () => void
-}
+export function Toolbar() {
+  const {
+    selectedFileIds,
+    clearSelection,
+    handleBulkDelete,
+    handleBulkAddTags,
+    bulkTagDialogOpen,
+    setBulkTagDialogOpen,
+  } = useFileSelection()
+  const { hasActiveUploads, openUploads } = useUpload()
+  const [newTagOpen, setNewTagOpen] = useState(false)
+  const createTag = useMutation(api.tags.create)
+  const { authClient } = useHostConnected()
+  const navigate = useNavigate()
 
-export function Toolbar({
-  onCreateTag,
-  newTagOpen,
-  setNewTagOpen,
-  hasActiveUploads,
-  onOpenUploads,
-  onSignOut,
-  selectedFileIds,
-  onClearSelection,
-  onBulkDelete,
-  onBulkAddTags,
-}: Props) {
-  const hasSelection = selectedFileIds && selectedFileIds.size > 0
-  const selectionCount = selectedFileIds?.size ?? 0
+  const handleCreateTag = async (name: string, color?: string) => {
+    await createTag({ name, color })
+  }
+
+  const handleSignOut = () => {
+    authClient.signOut().then(() => {
+      navigate({ to: '/dashboard/sign-in' })
+    })
+  }
 
   return (
     <div className="flex items-center gap-2">
-      {hasSelection && (
+      {selectedFileIds.size > 0 && (
         <>
           <span className="whitespace-nowrap px-3 py-1.5 rounded-md bg-primary/10 text-sm font-medium">
-            {selectionCount} selected
+            {selectedFileIds.size} selected
           </span>
           <Button
             variant="outline"
             size="sm"
-            onClick={onBulkAddTags}
-            disabled={!onBulkAddTags}
+            onClick={() => setBulkTagDialogOpen(true)}
           >
             <Tag className="h-4 w-4 mr-1.5" />
             Add Tags
@@ -50,8 +53,7 @@ export function Toolbar({
           <Button
             variant="outline"
             size="sm"
-            onClick={onBulkDelete}
-            disabled={!onBulkDelete}
+            onClick={handleBulkDelete}
             className="text-destructive hover:text-destructive"
           >
             <Trash2Icon className="h-4 w-4 mr-1.5" />
@@ -60,8 +62,7 @@ export function Toolbar({
           <Button
             variant="ghost"
             size="icon"
-            onClick={onClearSelection}
-            disabled={!onClearSelection}
+            onClick={clearSelection}
             aria-label="Clear selection"
             title="Clear selection"
           >
@@ -74,7 +75,7 @@ export function Toolbar({
         variant="outline"
         size="icon"
         aria-label="Open uploads"
-        onClick={onOpenUploads}
+        onClick={openUploads}
         title={hasActiveUploads ? 'Uploading…' : 'Open uploads'}
       >
         <div className="relative">
@@ -94,9 +95,14 @@ export function Toolbar({
       <TagCreateDialog
         open={newTagOpen}
         onOpenChange={setNewTagOpen}
-        onCreate={onCreateTag}
+        onCreate={handleCreateTag}
       />
-      <Button variant="outline" onClick={onSignOut}>
+      <BulkTagDialog
+        open={bulkTagDialogOpen}
+        onOpenChange={setBulkTagDialogOpen}
+        onConfirm={handleBulkAddTags}
+      />
+      <Button variant="outline" onClick={handleSignOut}>
         Sign out
       </Button>
     </div>
