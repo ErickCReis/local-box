@@ -3,7 +3,10 @@ import { paginationOptsValidator } from 'convex/server'
 import { getManyViaOrThrow } from 'convex-helpers/server/relationships'
 import { colorForTagName } from '../src/lib/tag-colors'
 import { action, mutation, query } from './_generated/server'
+import { authComponent } from './auth'
+import { determineTagCategory } from './utils/tag_categories'
 import type { Id } from './_generated/dataModel'
+import type { MutationCtx } from './_generated/server'
 
 export const generateUploadUrl = action({
   args: {},
@@ -11,6 +14,68 @@ export const generateUploadUrl = action({
     return await ctx.storage.generateUploadUrl()
   },
 })
+
+// Helper function to truncate email to first 10 characters
+function truncateEmail(email: string): string {
+  return email.substring(0, 10)
+}
+
+// Helper function to determine file size range category
+function getSizeRange(sizeInBytes: number): string {
+  const KB = 1024
+  const MB = 1024 * KB
+  const GB = 1024 * MB
+
+  if (sizeInBytes < 100 * KB) {
+    return 'Tiny'
+  } else if (sizeInBytes < 1 * MB) {
+    return 'Small'
+  } else if (sizeInBytes < 10 * MB) {
+    return 'Medium'
+  } else if (sizeInBytes < 100 * MB) {
+    return 'Large'
+  } else if (sizeInBytes < 1 * GB) {
+    return 'Huge'
+  } else {
+    return 'Very Large'
+  }
+}
+
+// Helper function to get or create a system tag
+async function getOrCreateSystemTag(
+  ctx: MutationCtx,
+  tagName: string,
+): Promise<Id<'tags'>> {
+  const existingTag = await ctx.db
+    .query('tags')
+    .withIndex('by_name', (q) => q.eq('name', tagName))
+    .unique()
+    .catch(() => null)
+
+  if (existingTag) {
+    // If tag exists but doesn't have isSystem flag, update it
+    const updates: {
+      isSystem: boolean
+      category?: 'file_type' | 'size' | 'owner' | 'custom'
+    } = { isSystem: true }
+    // If tag doesn't have category, determine and set it
+    if (!existingTag.category) {
+      updates.category = determineTagCategory(tagName, true)
+    }
+    await ctx.db.patch(existingTag._id, updates)
+    return existingTag._id
+  }
+
+  // Create new system tag with deterministic color and category
+  const color = colorForTagName(tagName)
+  const category = determineTagCategory(tagName, true)
+  return await ctx.db.insert('tags', {
+    name: tagName,
+    color,
+    isSystem: true,
+    category,
+  })
+}
 
 export const saveUploadedFile = mutation({
   args: {
@@ -30,36 +95,38 @@ export const saveUploadedFile = mutation({
       uploaderUserId: args.uploaderUserId,
     })
 
-    // Extract file extension and create/get tag for it
+    // Extract file extension and create/get tag for it (as system tag)
     const lastDotIndex = args.filename.lastIndexOf('.')
     let extensionTagId: Id<'tags'> | null = null
     if (lastDotIndex !== -1 && lastDotIndex < args.filename.length - 1) {
       const ext = args.filename.substring(lastDotIndex + 1).toLowerCase()
       if (ext.length > 0) {
-        // Lookup existing tag by extension name
-        const existingTag = await ctx.db
-          .query('tags')
-          .withIndex('by_name', (q) => q.eq('name', ext))
-          .unique()
-          .catch(() => null)
-
-        if (existingTag) {
-          extensionTagId = existingTag._id
-        } else {
-          // Create new tag with deterministic color
-          const color = colorForTagName(ext)
-          extensionTagId = await ctx.db.insert('tags', {
-            name: ext,
-            color,
-          })
-        }
+        extensionTagId = await getOrCreateSystemTag(ctx, ext)
       }
     }
 
-    // Merge extension tag with provided tagIds
+    // Get current authenticated user and create/get user tag
+    let userTagId: Id<'tags'> | null = null
+    const user = await authComponent.safeGetAuthUser(ctx)
+    if (user && user.email) {
+      const truncatedEmail = truncateEmail(user.email)
+      userTagId = await getOrCreateSystemTag(ctx, truncatedEmail)
+    }
+
+    // Determine file size range and create/get size range tag
+    const sizeRange = getSizeRange(args.size)
+    const sizeTagId = await getOrCreateSystemTag(ctx, sizeRange)
+
+    // Merge extension tag, system tags (user and size), and provided tagIds
     const allTagIds = new Set<Id<'tags'>>()
     if (extensionTagId) {
       allTagIds.add(extensionTagId)
+    }
+    if (userTagId) {
+      allTagIds.add(userTagId)
+    }
+    if (sizeTagId) {
+      allTagIds.add(sizeTagId)
     }
     if (args.tagIds && args.tagIds.length > 0) {
       args.tagIds.forEach((tagId) => allTagIds.add(tagId))
@@ -161,6 +228,7 @@ export const list = query({
             _creationTime: t._creationTime,
             name: t.name,
             color: t.color ?? undefined,
+            isSystem: t.isSystem ?? undefined,
           })),
         }
       }),
@@ -308,13 +376,29 @@ export const setTags = mutation({
       .withIndex('by_file', (q) => q.eq('fileId', args.fileId))
       .collect()
 
-    const existingSet = new Set(existing.map((m) => m.tagId))
-    const nextSet = new Set(args.tagIds)
+    // Load all existing tags to identify system tags
+    const existingTags = await Promise.all(
+      existing.map((m) => ctx.db.get(m.tagId)),
+    )
+    const systemTagIds = new Set<Id<'tags'>>()
+    for (const tag of existingTags) {
+      if (tag && tag.isSystem) {
+        systemTagIds.add(tag._id)
+      }
+    }
 
-    // Remove mappings not in nextSet
+    // Merge user-provided tagIds with system tags (system tags cannot be removed)
+    const nextSet = new Set(args.tagIds)
+    for (const systemTagId of systemTagIds) {
+      nextSet.add(systemTagId)
+    }
+
+    const existingSet = new Set(existing.map((m) => m.tagId))
+
+    // Remove mappings not in nextSet (but never remove system tags)
     await Promise.all(
       existing
-        .filter((m) => !nextSet.has(m.tagId))
+        .filter((m) => !nextSet.has(m.tagId) && !systemTagIds.has(m.tagId))
         .map((m) => ctx.db.delete(m._id)),
     )
     // Add mappings missing from existingSet

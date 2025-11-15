@@ -62,14 +62,26 @@ export function FileCard({
   useEffect(() => {
     setSelected(new Set(tags.map((t) => t._id)))
   }, [tags, file._id])
-  const remove = (id: Id<'tags'>) =>
+  const remove = (id: Id<'tags'>) => {
+    // Prevent removal of system tags
+    const tag = tags.find((t) => t._id === id)
+    if (tag?.isSystem) return
+
     setSelected((prev) => {
       const next = new Set(prev)
       next.delete(id)
       onSetTags(file._id, Array.from(next))
       return next
     })
-  const toggle = (id: Id<'tags'>) =>
+  }
+  const toggle = (id: Id<'tags'>) => {
+    // Prevent toggling off system tags
+    const tag = allTags.find((t) => t._id === id)
+    if (tag?.isSystem && selected.has(id)) {
+      // System tag is already selected, don't allow removing it
+      return
+    }
+
     setSelected((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)
@@ -77,6 +89,7 @@ export function FileCard({
       onSetTags(file._id, Array.from(next))
       return next
     })
+  }
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)
   }
@@ -139,7 +152,7 @@ export function FileCard({
               {tags.map((t) => (
                 <TagsValue
                   key={t._id}
-                  onRemove={() => remove(t._id)}
+                  onRemove={t.isSystem ? undefined : () => remove(t._id)}
                   className="px-1.5 py-0.5 text-[10px]"
                   style={t.color ? { backgroundColor: t.color } : undefined}
                 >
@@ -154,11 +167,15 @@ export function FileCard({
                 <TagsGroup>
                   {allTags.map((t) => {
                     const active = selected.has(t._id)
+                    const isSystem = t.isSystem ?? false
+                    // System tags that are active cannot be toggled off
+                    const canToggle = !(isSystem && active)
                     return (
                       <TagsItem
                         key={t._id}
                         value={t.name}
-                        onSelect={() => toggle(t._id)}
+                        onSelect={canToggle ? () => toggle(t._id) : undefined}
+                        className={!canToggle ? 'cursor-not-allowed opacity-75' : undefined}
                       >
                         <div className="flex items-center gap-2">
                           <span

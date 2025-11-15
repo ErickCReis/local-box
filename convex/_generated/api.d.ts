@@ -13,6 +13,7 @@ import type * as files from "../files.js";
 import type * as http from "../http.js";
 import type * as members from "../members.js";
 import type * as tags from "../tags.js";
+import type * as utils_tag_categories from "../utils/tag_categories.js";
 
 import type {
   ApiFromModules,
@@ -26,6 +27,7 @@ declare const fullApi: ApiFromModules<{
   http: typeof http;
   members: typeof members;
   tags: typeof tags;
+  "utils/tag_categories": typeof utils_tag_categories;
 }>;
 
 /**

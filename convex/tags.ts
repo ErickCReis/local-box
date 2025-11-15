@@ -1,6 +1,7 @@
 import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
-import { mutation, query } from './_generated/server'
+import { internalMutation, mutation, query } from './_generated/server'
+import { determineTagCategory } from './utils/tag_categories'
 
 export const list = query({
   args: {},
@@ -29,9 +30,11 @@ export const create = mutation({
     if (existing) {
       throw new Error('Tag already exists')
     }
+    // User-created tags are always custom
     const id = await ctx.db.insert('tags', {
       name: args.name,
       color: args.color,
+      category: 'custom',
     })
     return id
   },
@@ -55,9 +58,13 @@ export const rename = mutation({
     if (dup && dup._id !== args.tagId) {
       throw new Error('Another tag with this name already exists')
     }
+    // Recalculate category if tag is a system tag (category might change based on new name)
+    const isSystem = tag.isSystem ?? false
+    const category = determineTagCategory(args.name, isSystem)
     await ctx.db.patch(args.tagId, {
       name: args.name,
       color: args.color,
+      category,
     })
     return null
   },
@@ -94,5 +101,32 @@ export const listPage = query({
       isDone: result.isDone,
       continueCursor: result.continueCursor,
     }
+  },
+})
+
+/**
+ * Internal mutation to categorize all existing tags that don't have a category.
+ * This is a one-time migration function that can be called to update existing tags.
+ */
+export const categorizeAllTags = internalMutation({
+  args: {},
+  returns: v.object({
+    updated: v.number(),
+  }),
+  handler: async (ctx) => {
+    const allTags = await ctx.db.query('tags').collect()
+    let updated = 0
+
+    for (const tag of allTags) {
+      // Only update tags that don't have a category
+      if (!tag.category) {
+        const isSystem = tag.isSystem ?? false
+        const category = determineTagCategory(tag.name, isSystem)
+        await ctx.db.patch(tag._id, { category })
+        updated++
+      }
+    }
+
+    return { updated }
   },
 })

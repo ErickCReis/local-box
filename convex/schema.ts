@@ -24,6 +24,15 @@ export default defineSchema({
   tags: defineTable({
     name: v.string(),
     color: v.optional(v.string()),
+    isSystem: v.optional(v.boolean()),
+    category: v.optional(
+      v.union(
+        v.literal('file_type'),
+        v.literal('size'),
+        v.literal('owner'),
+        v.literal('custom'),
+      ),
+    ),
   }).index('by_name', ['name']),
   // Files stored in Convex storage, global
   files: defineTable({
