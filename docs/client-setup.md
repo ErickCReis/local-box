@@ -25,7 +25,7 @@ This guide shows how a user joins a Host from the hosted client.
 If you are the Host and want to expose your local environment for others to connect:
 
 1. Open the app at `/setup`.
-2. In the Docker section, click "Start Docker" to bring services up.
+2. In the Docker section, click "Start Docker" to bring services up (uses Docker Engine API).
 3. In the Minimal Proxy section, click "Start Proxy". This starts a localtunnel and displays a public URL.
 4. Share that URL with your team. They will use it as the Host URL on the hosted client.
 

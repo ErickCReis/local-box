@@ -1,9 +1,10 @@
 import { createClient } from '@convex-dev/better-auth'
-import { convex, crossDomain } from '@convex-dev/better-auth/plugins'
+import { convex } from '@convex-dev/better-auth/plugins'
 import { betterAuth } from 'better-auth'
+import { v } from 'convex/values'
 import { components, internal } from './_generated/api'
-import { internalQuery, query } from './_generated/server'
-import type { DataModel, Doc } from './_generated/dataModel'
+import { mutation, query } from './_generated/server'
+import type { DataModel } from './_generated/dataModel'
 import type { AuthFunctions, GenericCtx } from '@convex-dev/better-auth'
 
 const authFunctions: AuthFunctions = internal.auth
@@ -28,6 +29,30 @@ export const authComponent = createClient<DataModel>(components.betterAuth, {
 
 export const { onCreate, onUpdate, onDelete } = authComponent.triggersApi()
 
+export const createOwnerUser = mutation({
+  args: {
+    name: v.string(),
+    email: v.string(),
+    password: v.string(),
+  },
+  handler: async (ctx, { name, email, password }) => {
+    const member = await ctx.db.query('members').first()
+    if (member) {
+      throw new Error('Owner user already exists')
+    }
+
+    const auth = createAuth(ctx)
+    const result = await auth.api.signUpEmail({
+      body: {
+        email,
+        password,
+        name,
+      },
+    })
+
+    return result.user
+  },
+})
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx) => {
@@ -46,6 +71,18 @@ export const getCurrentUser = query({
       email: user.email,
       role: member.role,
     }
+  },
+})
+
+export const hasOwner = query({
+  args: {},
+  returns: v.boolean(),
+  handler: async (ctx) => {
+    const owner = await ctx.db
+      .query('members')
+      .filter((q) => q.eq(q.field('role'), 'owner'))
+      .first()
+    return owner !== null
   },
 })
 

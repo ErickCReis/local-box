@@ -16,14 +16,19 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardSignUpRouteImport } from './routes/dashboard/sign-up'
 import { Route as DashboardSignInRouteImport } from './routes/dashboard/sign-in'
 import { Route as ApiPingRouteImport } from './routes/api/ping'
-import { Route as HostSetupRouteImport } from './routes/_host/setup'
 import { Route as DashboardAuthedRouteRouteImport } from './routes/dashboard/_authed/route'
+import { Route as HostSetupRouteRouteImport } from './routes/_host/setup/route'
 import { Route as HostAdminRouteRouteImport } from './routes/_host/admin/route'
 import { Route as DashboardAuthedIndexRouteImport } from './routes/dashboard/_authed/index'
 import { Route as HostAdminIndexRouteImport } from './routes/_host/admin/index'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as HostAdminTagsRouteImport } from './routes/_host/admin/tags'
 import { Route as HostAdminMembersRouteImport } from './routes/_host/admin/members'
+import { Route as HostSetupTunnelIndexRouteImport } from './routes/_host/setup/tunnel/index'
+import { Route as HostSetupDockerIndexRouteImport } from './routes/_host/setup/docker/index'
+import { Route as HostSetupConvexIndexRouteImport } from './routes/_host/setup/convex/index'
+import { Route as HostSetupAuthIndexRouteImport } from './routes/_host/setup/auth/index'
+import { Route as HostSetupOverviewIndexRouteImport } from './routes/_host/setup/_overview/index'
 
 const EnterHostRoute = EnterHostRouteImport.update({
   id: '/enter-host',
@@ -59,14 +64,14 @@ const ApiPingRoute = ApiPingRouteImport.update({
   path: '/api/ping',
   getParentRoute: () => rootRouteImport,
 } as any)
-const HostSetupRoute = HostSetupRouteImport.update({
-  id: '/setup',
-  path: '/setup',
-  getParentRoute: () => HostRouteRoute,
-} as any)
 const DashboardAuthedRouteRoute = DashboardAuthedRouteRouteImport.update({
   id: '/_authed',
   getParentRoute: () => DashboardRouteRoute,
+} as any)
+const HostSetupRouteRoute = HostSetupRouteRouteImport.update({
+  id: '/setup',
+  path: '/setup',
+  getParentRoute: () => HostRouteRoute,
 } as any)
 const HostAdminRouteRoute = HostAdminRouteRouteImport.update({
   id: '/admin',
@@ -98,13 +103,38 @@ const HostAdminMembersRoute = HostAdminMembersRouteImport.update({
   path: '/members',
   getParentRoute: () => HostAdminRouteRoute,
 } as any)
+const HostSetupTunnelIndexRoute = HostSetupTunnelIndexRouteImport.update({
+  id: '/tunnel/',
+  path: '/tunnel/',
+  getParentRoute: () => HostSetupRouteRoute,
+} as any)
+const HostSetupDockerIndexRoute = HostSetupDockerIndexRouteImport.update({
+  id: '/docker/',
+  path: '/docker/',
+  getParentRoute: () => HostSetupRouteRoute,
+} as any)
+const HostSetupConvexIndexRoute = HostSetupConvexIndexRouteImport.update({
+  id: '/convex/',
+  path: '/convex/',
+  getParentRoute: () => HostSetupRouteRoute,
+} as any)
+const HostSetupAuthIndexRoute = HostSetupAuthIndexRouteImport.update({
+  id: '/auth/',
+  path: '/auth/',
+  getParentRoute: () => HostSetupRouteRoute,
+} as any)
+const HostSetupOverviewIndexRoute = HostSetupOverviewIndexRouteImport.update({
+  id: '/_overview/',
+  path: '/',
+  getParentRoute: () => HostSetupRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardAuthedRouteRouteWithChildren
   '/enter-host': typeof EnterHostRoute
   '/admin': typeof HostAdminRouteRouteWithChildren
-  '/setup': typeof HostSetupRoute
+  '/setup': typeof HostSetupRouteRouteWithChildren
   '/api/ping': typeof ApiPingRoute
   '/dashboard/sign-in': typeof DashboardSignInRoute
   '/dashboard/sign-up': typeof DashboardSignUpRoute
@@ -113,12 +143,16 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin/': typeof HostAdminIndexRoute
   '/dashboard/': typeof DashboardAuthedIndexRoute
+  '/setup/': typeof HostSetupOverviewIndexRoute
+  '/setup/auth': typeof HostSetupAuthIndexRoute
+  '/setup/convex': typeof HostSetupConvexIndexRoute
+  '/setup/docker': typeof HostSetupDockerIndexRoute
+  '/setup/tunnel': typeof HostSetupTunnelIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardAuthedIndexRoute
   '/enter-host': typeof EnterHostRoute
-  '/setup': typeof HostSetupRoute
   '/api/ping': typeof ApiPingRoute
   '/dashboard/sign-in': typeof DashboardSignInRoute
   '/dashboard/sign-up': typeof DashboardSignUpRoute
@@ -126,6 +160,11 @@ export interface FileRoutesByTo {
   '/admin/tags': typeof HostAdminTagsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/admin': typeof HostAdminIndexRoute
+  '/setup': typeof HostSetupOverviewIndexRoute
+  '/setup/auth': typeof HostSetupAuthIndexRoute
+  '/setup/convex': typeof HostSetupConvexIndexRoute
+  '/setup/docker': typeof HostSetupDockerIndexRoute
+  '/setup/tunnel': typeof HostSetupTunnelIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -134,8 +173,8 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/enter-host': typeof EnterHostRoute
   '/_host/admin': typeof HostAdminRouteRouteWithChildren
+  '/_host/setup': typeof HostSetupRouteRouteWithChildren
   '/dashboard/_authed': typeof DashboardAuthedRouteRouteWithChildren
-  '/_host/setup': typeof HostSetupRoute
   '/api/ping': typeof ApiPingRoute
   '/dashboard/sign-in': typeof DashboardSignInRoute
   '/dashboard/sign-up': typeof DashboardSignUpRoute
@@ -144,6 +183,11 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/_host/admin/': typeof HostAdminIndexRoute
   '/dashboard/_authed/': typeof DashboardAuthedIndexRoute
+  '/_host/setup/_overview/': typeof HostSetupOverviewIndexRoute
+  '/_host/setup/auth/': typeof HostSetupAuthIndexRoute
+  '/_host/setup/convex/': typeof HostSetupConvexIndexRoute
+  '/_host/setup/docker/': typeof HostSetupDockerIndexRoute
+  '/_host/setup/tunnel/': typeof HostSetupTunnelIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -161,12 +205,16 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/admin/'
     | '/dashboard/'
+    | '/setup/'
+    | '/setup/auth'
+    | '/setup/convex'
+    | '/setup/docker'
+    | '/setup/tunnel'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dashboard'
     | '/enter-host'
-    | '/setup'
     | '/api/ping'
     | '/dashboard/sign-in'
     | '/dashboard/sign-up'
@@ -174,6 +222,11 @@ export interface FileRouteTypes {
     | '/admin/tags'
     | '/api/auth/$'
     | '/admin'
+    | '/setup'
+    | '/setup/auth'
+    | '/setup/convex'
+    | '/setup/docker'
+    | '/setup/tunnel'
   id:
     | '__root__'
     | '/'
@@ -181,8 +234,8 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/enter-host'
     | '/_host/admin'
-    | '/dashboard/_authed'
     | '/_host/setup'
+    | '/dashboard/_authed'
     | '/api/ping'
     | '/dashboard/sign-in'
     | '/dashboard/sign-up'
@@ -191,6 +244,11 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/_host/admin/'
     | '/dashboard/_authed/'
+    | '/_host/setup/_overview/'
+    | '/_host/setup/auth/'
+    | '/_host/setup/convex/'
+    | '/_host/setup/docker/'
+    | '/_host/setup/tunnel/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -253,19 +311,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiPingRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_host/setup': {
-      id: '/_host/setup'
-      path: '/setup'
-      fullPath: '/setup'
-      preLoaderRoute: typeof HostSetupRouteImport
-      parentRoute: typeof HostRouteRoute
-    }
     '/dashboard/_authed': {
       id: '/dashboard/_authed'
       path: ''
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardAuthedRouteRouteImport
       parentRoute: typeof DashboardRouteRoute
+    }
+    '/_host/setup': {
+      id: '/_host/setup'
+      path: '/setup'
+      fullPath: '/setup'
+      preLoaderRoute: typeof HostSetupRouteRouteImport
+      parentRoute: typeof HostRouteRoute
     }
     '/_host/admin': {
       id: '/_host/admin'
@@ -309,6 +367,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof HostAdminMembersRouteImport
       parentRoute: typeof HostAdminRouteRoute
     }
+    '/_host/setup/tunnel/': {
+      id: '/_host/setup/tunnel/'
+      path: '/tunnel'
+      fullPath: '/setup/tunnel'
+      preLoaderRoute: typeof HostSetupTunnelIndexRouteImport
+      parentRoute: typeof HostSetupRouteRoute
+    }
+    '/_host/setup/docker/': {
+      id: '/_host/setup/docker/'
+      path: '/docker'
+      fullPath: '/setup/docker'
+      preLoaderRoute: typeof HostSetupDockerIndexRouteImport
+      parentRoute: typeof HostSetupRouteRoute
+    }
+    '/_host/setup/convex/': {
+      id: '/_host/setup/convex/'
+      path: '/convex'
+      fullPath: '/setup/convex'
+      preLoaderRoute: typeof HostSetupConvexIndexRouteImport
+      parentRoute: typeof HostSetupRouteRoute
+    }
+    '/_host/setup/auth/': {
+      id: '/_host/setup/auth/'
+      path: '/auth'
+      fullPath: '/setup/auth'
+      preLoaderRoute: typeof HostSetupAuthIndexRouteImport
+      parentRoute: typeof HostSetupRouteRoute
+    }
+    '/_host/setup/_overview/': {
+      id: '/_host/setup/_overview/'
+      path: '/'
+      fullPath: '/setup/'
+      preLoaderRoute: typeof HostSetupOverviewIndexRouteImport
+      parentRoute: typeof HostSetupRouteRoute
+    }
   }
 }
 
@@ -328,14 +421,34 @@ const HostAdminRouteRouteWithChildren = HostAdminRouteRoute._addFileChildren(
   HostAdminRouteRouteChildren,
 )
 
+interface HostSetupRouteRouteChildren {
+  HostSetupOverviewIndexRoute: typeof HostSetupOverviewIndexRoute
+  HostSetupAuthIndexRoute: typeof HostSetupAuthIndexRoute
+  HostSetupConvexIndexRoute: typeof HostSetupConvexIndexRoute
+  HostSetupDockerIndexRoute: typeof HostSetupDockerIndexRoute
+  HostSetupTunnelIndexRoute: typeof HostSetupTunnelIndexRoute
+}
+
+const HostSetupRouteRouteChildren: HostSetupRouteRouteChildren = {
+  HostSetupOverviewIndexRoute: HostSetupOverviewIndexRoute,
+  HostSetupAuthIndexRoute: HostSetupAuthIndexRoute,
+  HostSetupConvexIndexRoute: HostSetupConvexIndexRoute,
+  HostSetupDockerIndexRoute: HostSetupDockerIndexRoute,
+  HostSetupTunnelIndexRoute: HostSetupTunnelIndexRoute,
+}
+
+const HostSetupRouteRouteWithChildren = HostSetupRouteRoute._addFileChildren(
+  HostSetupRouteRouteChildren,
+)
+
 interface HostRouteRouteChildren {
   HostAdminRouteRoute: typeof HostAdminRouteRouteWithChildren
-  HostSetupRoute: typeof HostSetupRoute
+  HostSetupRouteRoute: typeof HostSetupRouteRouteWithChildren
 }
 
 const HostRouteRouteChildren: HostRouteRouteChildren = {
   HostAdminRouteRoute: HostAdminRouteRouteWithChildren,
-  HostSetupRoute: HostSetupRoute,
+  HostSetupRouteRoute: HostSetupRouteRouteWithChildren,
 }
 
 const HostRouteRouteWithChildren = HostRouteRoute._addFileChildren(

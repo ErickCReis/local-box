@@ -1,25 +1,51 @@
 import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
-import { toast } from 'sonner'
+import { setupStatus } from '../-server'
 import { useHostUrl } from '@/providers/host-url'
 import { HostConnectionProvider } from '@/providers/host-connection'
-import { setupStatus } from '../-server'
 
 export const Route = createFileRoute('/_host/admin')({
   component: AdminLayout,
   loader: async () => {
-    const { dockerRunning, tunnelUrl } = await setupStatus()
+    const {
+      dockerRunning,
+      tunnelUrl,
+      tunnelRunning,
+      convexEnabled,
+      authEnabled,
+      completedCount,
+      totalCount,
+    } = await setupStatus()
+
+    // Require Docker and Tunnel at minimum for admin access
+    // Convex and Auth are recommended but not strictly required
     if (!dockerRunning) {
-      toast.error('Docker is not running')
-      throw redirect({ to: '/_host/setup' })
+      throw redirect({
+        to: '/setup',
+        search: {
+          error:
+            'Docker is not running. Please start Docker to access admin features.',
+        },
+      })
     }
 
-    // if (!tunnelUrl) {
-    //   toast.error('Tunnel is not running')
-    //   throw redirect({ to: '/_host/setup' })
+    // if (!tunnelRunning) {
+    //   throw redirect({
+    //     to: '/setup',
+    //     search: {
+    //       error:
+    //         'Tunnel is not running. Please start the tunnel to access admin features.',
+    //     },
+    //   })
     // }
 
     return {
       tunnelUrl,
+      dockerRunning,
+      tunnelRunning,
+      convexEnabled,
+      authEnabled,
+      completedCount,
+      totalCount,
     }
   },
 })

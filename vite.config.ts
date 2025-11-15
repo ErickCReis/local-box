@@ -11,6 +11,9 @@ export default defineConfig((ctx) => {
       port: process.env.PORT ? parseInt(process.env.PORT) : 3000,
       allowedHosts: ['.trycloudflare.com'],
     },
+    optimizeDeps: {
+      exclude: ['ssh2', 'cpu-features'],
+    },
     plugins: [
       tailwindcss(),
       tsConfigPaths(),

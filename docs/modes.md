@@ -9,11 +9,15 @@ Users can switch between modes. Switching to host mode requires setup.
 
 ### Minimal Setup (local quickstart)
 ```bash
-# Start backend + dashboard (Docker)
-docker compose up
+# Start backend + dashboard (via Docker Engine API)
+# Use the web UI at /setup and click "Start Docker"
+# Or use Docker directly:
+docker run -d --name local-box_backend \
+  -p 3210:3210 -p 3211:3211 \
+  ghcr.io/get-convex/convex-backend:latest
 
 # Generate admin key for dashboard/CLI
-docker compose exec backend ./generate_admin_key.sh
+docker exec local-box_backend ./generate_admin_key.sh
 ```
 
 Set in your Convex project:

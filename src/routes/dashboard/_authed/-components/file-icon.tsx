@@ -9,7 +9,6 @@ import {
   Sheet as Spreadsheet,
   Video,
 } from 'lucide-react'
-import type { FC } from 'react'
 
 type Props = {
   filename: string
@@ -90,5 +89,3 @@ export function FileIcon({ filename, contentType, className }: Props) {
 
   return <Icon className={className} />
 }
-
-

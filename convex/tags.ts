@@ -4,7 +4,7 @@ import { mutation, query } from './_generated/server'
 
 export const list = query({
   args: {},
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     const tags = await ctx.db
       .query('tags')
       .withIndex('by_name')

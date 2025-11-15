@@ -1,17 +1,27 @@
 import { useEffect, useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
-import { Copy, Play, Square } from 'lucide-react'
 import {
-  dockerDown,
-  dockerUp,
-  getQuickTunnels,
-  setupStatus,
-  startQuickTunnels,
-  stopQuickTunnels,
-} from './-server'
+  ChevronDown,
+  Copy,
+  ExternalLink,
+  Loader2,
+  Play,
+  Square,
+} from 'lucide-react'
+import { setupStatus } from './-server'
+import { mutations as dockerMutations } from './setup/docker/-mutations'
+import { mutations as tunnelMutations } from './setup/tunnel/-mutations'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 
 export const Route = createFileRoute('/_host')({
   loader: async () => setupStatus(),
@@ -19,41 +29,71 @@ export const Route = createFileRoute('/_host')({
 })
 
 function HostLayout() {
-  const { dockerRunning, tunnelUrl } = Route.useLoaderData()
-  const [currentTunnelUrl, setCurrentTunnelUrl] = useState(tunnelUrl)
+  const loaderData = Route.useLoaderData()
+  const [currentTunnelUrl, setCurrentTunnelUrl] = useState(loaderData.tunnelUrl)
+
+  // Shared setup status query
+  const setupStatusFn = useServerFn(setupStatus)
+  const { data: setupStatusData } = useQuery({
+    queryKey: ['setup-status'],
+    queryFn: () => setupStatusFn(),
+    refetchInterval: 5000,
+    initialData: loaderData,
+  })
+
+  const {
+    dockerRunning,
+    tunnelUrl,
+    tunnelRunning,
+    convexEnabled,
+    authEnabled,
+    completedCount,
+    totalCount,
+  } = setupStatusData
 
   // Docker actions
-  const dockerUpFn = useServerFn(dockerUp)
-  const dockerUpMutation = useMutation({
-    mutationFn: dockerUpFn,
-  })
+  const dockerUpMutation = useMutation(dockerMutations.dockerUp.options())
 
-  const dockerDownFn = useServerFn(dockerDown)
-  const dockerDownMutation = useMutation({
-    mutationFn: dockerDownFn,
-  })
+  const dockerDownMutation = useMutation(dockerMutations.dockerDown.options())
 
   // Tunnel actions
-  const startTunnelsFn = useServerFn(startQuickTunnels)
   const startTunnelsMutation = useMutation({
-    mutationFn: startTunnelsFn,
+    ...tunnelMutations.tunnelStart.options(),
     onSuccess: (res) => {
       setCurrentTunnelUrl(res.tunnel)
     },
   })
 
-  const stopTunnelsFn = useServerFn(stopQuickTunnels)
   const stopTunnelsMutation = useMutation({
-    mutationFn: stopTunnelsFn,
+    ...tunnelMutations.tunnelStop.options(),
     onSuccess: () => {
       setCurrentTunnelUrl(null)
     },
   })
 
-  // Sync tunnel URL from loader
+  // Sync tunnel URL from query
   useEffect(() => {
     setCurrentTunnelUrl(tunnelUrl)
   }, [tunnelUrl])
+
+  const isDockerUpPending = dockerMutations.dockerUp.useIsPending()
+  const isDockerDownPending = dockerMutations.dockerDown.useIsPending()
+  const isTunnelStartPending = tunnelMutations.tunnelStart.useIsPending()
+  const isTunnelStopPending = tunnelMutations.tunnelStop.useIsPending()
+
+  // Calculate overall status
+  const allRunning =
+    dockerRunning && tunnelRunning && convexEnabled && authEnabled
+  const statusText = allRunning
+    ? 'Running'
+    : completedCount > 0
+      ? 'Partial'
+      : 'Stopped'
+  const statusColor = allRunning
+    ? 'bg-green-500'
+    : completedCount > 0
+      ? 'bg-yellow-500'
+      : 'bg-gray-400'
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -65,6 +105,7 @@ function HostLayout() {
               <nav className="flex items-center gap-4">
                 <Link
                   to="/setup"
+                  search={{ error: undefined }}
                   activeProps={{
                     className: 'text-foreground underline',
                   }}
@@ -93,86 +134,202 @@ function HostLayout() {
               </nav>
             </div>
 
-            <div className="flex items-center gap-4">
-              {/* Docker Status */}
-              <div className="flex items-center gap-2">
-                <div
-                  className={`h-2 w-2 rounded-full ${
-                    dockerRunning ? 'bg-green-500' : 'bg-gray-400'
-                  }`}
-                  title={dockerRunning ? 'Docker running' : 'Docker stopped'}
-                />
-                <span className="text-sm text-muted-foreground">Docker</span>
-                <div className="flex gap-1">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <div className={`h-2 w-2 rounded-full ${statusColor}`} />
+                  <span className="text-sm font-medium">{statusText}</span>
+                  <ChevronDown className="h-3 w-3 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-64">
+                <DropdownMenuLabel>Status</DropdownMenuLabel>
+                <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  Setup: {completedCount}/{totalCount} complete
+                </div>
+                <DropdownMenuSeparator />
+
+                {/* Docker Section */}
+                <DropdownMenuLabel className="flex items-center justify-between">
+                  <Link
+                    to="/setup/docker"
+                    search={{ error: undefined }}
+                    className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span>Docker</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </DropdownMenuLabel>
+                <div className="px-2 py-1.5 flex items-center gap-2">
+                  <div
+                    className={`h-2 w-2 rounded-full ${
+                      dockerRunning ? 'bg-green-500' : 'bg-gray-400'
+                    }`}
+                  />
+                  <span className="text-sm flex-1">
+                    {dockerRunning ? 'Running' : 'Stopped'}
+                  </span>
                   {dockerRunning ? (
                     <Button
+                      variant="ghost"
                       size="sm"
-                      variant="outline"
-                      onClick={() => dockerDownMutation.mutate({})}
-                      disabled={dockerDownMutation.isPending}
-                      title="Stop Docker"
+                      className="h-6 px-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        dockerDownMutation.mutate({})
+                      }}
+                      disabled={isDockerDownPending}
                     >
-                      <Square className="h-3 w-3" />
+                      {isDockerDownPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Square className="h-3 w-3" />
+                      )}
                     </Button>
                   ) : (
                     <Button
+                      variant="ghost"
                       size="sm"
-                      variant="outline"
-                      onClick={() => dockerUpMutation.mutate({})}
-                      disabled={dockerUpMutation.isPending}
-                      title="Start Docker"
+                      className="h-6 px-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        dockerUpMutation.mutate({})
+                      }}
+                      disabled={isDockerUpPending}
                     >
-                      <Play className="h-3 w-3" />
+                      {isDockerUpPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Play className="h-3 w-3" />
+                      )}
                     </Button>
                   )}
                 </div>
-              </div>
 
-              {/* Tunnel Status */}
-              <div className="flex items-center gap-2">
-                <div
-                  className={`h-2 w-2 rounded-full ${
-                    currentTunnelUrl ? 'bg-green-500' : 'bg-gray-400'
-                  }`}
-                  title={currentTunnelUrl ? 'Tunnel running' : 'Tunnel stopped'}
-                />
-                <span className="text-sm text-muted-foreground">Tunnel</span>
+                <DropdownMenuSeparator />
 
-                <div className="flex gap-1">
-                  {currentTunnelUrl ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        navigator.clipboard.writeText(currentTunnelUrl)
-                      }
-                      title="Copy tunnel URL"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => startTunnelsMutation.mutate({})}
-                      disabled={startTunnelsMutation.isPending}
-                      title="Start Tunnel"
-                    >
-                      <Play className="h-3 w-3" />
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => stopTunnelsMutation.mutate({})}
-                    disabled={stopTunnelsMutation.isPending}
-                    title="Stop Tunnel"
+                {/* Tunnel Section */}
+                <DropdownMenuLabel className="flex items-center justify-between">
+                  <Link
+                    to="/setup/tunnel"
+                    className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Square className="h-3 w-3" />
-                  </Button>
+                    <span>Tunnel</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </DropdownMenuLabel>
+                <div className="px-2 py-1.5 flex items-center gap-2">
+                  <div
+                    className={`h-2 w-2 rounded-full ${
+                      tunnelRunning ? 'bg-green-500' : 'bg-gray-400'
+                    }`}
+                  />
+                  <span className="text-sm flex-1">
+                    {tunnelRunning ? 'Online' : 'Offline'}
+                  </span>
+                  {tunnelRunning ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        stopTunnelsMutation.mutate({})
+                      }}
+                      disabled={isTunnelStopPending}
+                    >
+                      {isTunnelStopPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Square className="h-3 w-3" />
+                      )}
+                    </Button>
+                  ) : (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-xs"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        startTunnelsMutation.mutate({})
+                      }}
+                      disabled={isTunnelStartPending}
+                    >
+                      {isTunnelStartPending ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Play className="h-3 w-3" />
+                      )}
+                    </Button>
+                  )}
                 </div>
-              </div>
-            </div>
+                {tunnelRunning && (
+                  <>
+                    <DropdownMenuItem
+                      onClick={() =>
+                        navigator.clipboard.writeText(currentTunnelUrl || '')
+                      }
+                    >
+                      <Copy className="h-4 w-4" />
+                      Copy URL
+                    </DropdownMenuItem>
+                    <div className="px-2 py-1.5 bg-muted rounded text-xs font-mono break-all">
+                      {currentTunnelUrl}
+                    </div>
+                  </>
+                )}
+
+                <DropdownMenuSeparator />
+
+                {/* Convex Section */}
+                <DropdownMenuLabel className="flex items-center justify-between">
+                  <Link
+                    to="/setup/convex"
+                    className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span>Convex Backend</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </DropdownMenuLabel>
+                <div className="px-2 py-1.5 flex items-center gap-2">
+                  <div
+                    className={`h-2 w-2 rounded-full ${
+                      convexEnabled ? 'bg-green-500' : 'bg-gray-400'
+                    }`}
+                  />
+                  <span className="text-sm flex-1">
+                    {convexEnabled ? 'Enabled' : 'Not configured'}
+                  </span>
+                </div>
+
+                <DropdownMenuSeparator />
+
+                {/* Auth Section */}
+                <DropdownMenuLabel className="flex items-center justify-between">
+                  <Link
+                    to="/setup/auth"
+                    className="flex items-center gap-1.5 hover:text-foreground transition-colors"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span>Auth</span>
+                    <ExternalLink className="h-3 w-3" />
+                  </Link>
+                </DropdownMenuLabel>
+                <div className="px-2 py-1.5 flex items-center gap-2">
+                  <div
+                    className={`h-2 w-2 rounded-full ${
+                      authEnabled ? 'bg-green-500' : 'bg-gray-400'
+                    }`}
+                  />
+                  <span className="text-sm flex-1">
+                    {authEnabled ? 'Configured' : 'Not configured'}
+                  </span>
+                </div>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
