@@ -3,12 +3,11 @@ import { CheckIcon, X } from 'lucide-react'
 import type { Doc, Id } from '@convex/_generated/dataModel'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Separator } from '@/components/ui/separator'
 import { cn } from '@/lib/utils'
 
 type Tag = Doc<'tags'>
 
-type TagCategory = 'file_type' | 'size' | 'owner' | 'custom'
+type TagCategory = NonNullable<Tag['category']>
 
 const CATEGORY_ORDER: Array<TagCategory> = [
   'file_type',
@@ -95,21 +94,8 @@ export function TagFilterBar({ tags, selectedIds, onToggle, onClear }: Props) {
 
   return (
     <div className="space-y-3">
-      {hasSelection && (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onClear}
-            className="h-7 gap-1.5"
-          >
-            <X className="size-3" />
-            Clear filters
-          </Button>
-        </div>
-      )}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        {CATEGORY_ORDER.map((category, categoryIndex) => {
+        {CATEGORY_ORDER.map((category) => {
           const categoryTags = groupedTags[category]
           if (categoryTags.length === 0) return null
 
@@ -124,6 +110,17 @@ export function TagFilterBar({ tags, selectedIds, onToggle, onClear }: Props) {
             </div>
           )
         })}
+        {hasSelection && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClear}
+            className="h-[22px] gap-1"
+          >
+            <X className="size-3" />
+            Clear filters
+          </Button>
+        )}
       </div>
     </div>
   )

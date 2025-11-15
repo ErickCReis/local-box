@@ -3,7 +3,7 @@ import {
   stripSearchParams,
   useNavigate,
 } from '@tanstack/react-router'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '@convex/_generated/api'
 import { useConvex, useMutation, useQuery } from 'convex/react'
 import { zodValidator } from '@tanstack/zod-adapter'
@@ -11,6 +11,7 @@ import * as z from 'zod'
 import { FileGrid } from './-components/file-grid'
 import { TagFilterBar } from './-components/tag-filter-bar'
 import { Toolbar } from './-components/toolbar'
+import { BulkTagDialog } from './-components/bulk-tag-dialog'
 import type { Id } from '@convex/_generated/dataModel'
 import { useFileUploader } from '@/hooks/use-file-uploader'
 import { UploadArea } from '@/routes/dashboard/_authed/-components/upload/upload-area'
@@ -63,15 +64,49 @@ function RouteComponent() {
   const setFileTags = useMutation(api.files.setTags)
   const createTag = useMutation(api.tags.create)
 
+  const [selectedFileIds, setSelectedFileIds] = useState<Set<Id<'files'>>>(
+    new Set(),
+  )
+
+  const toggleFileSelection = (fileId: Id<'files'>) => {
+    setSelectedFileIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(fileId)) {
+        next.delete(fileId)
+      } else {
+        next.add(fileId)
+      }
+      return next
+    })
+  }
+
+  const selectAllFiles = () => {
+    const allFileIds = new Set<Id<'files'>>(files.map((row) => row.file._id))
+    setSelectedFileIds(allFileIds)
+  }
+
+  const clearSelection = () => {
+    setSelectedFileIds(new Set())
+  }
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        clearSelection()
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+        e.preventDefault()
+        selectAllFiles()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [files])
+
   const uploader = useFileUploader({
     defaultTagIds: selectedTagIds,
   })
   const [uploadsOpen, setUploadsOpen] = useState(false)
-  const handleToolbarSelectFiles = (filesList: FileList | null) => {
-    if (!filesList) return
-    uploader.addFiles(Array.from(filesList))
-    setUploadsOpen(true)
-  }
 
   const handleDownload = async (fileId: Id<'files'>) => {
     const url = await convex.query(api.files.getDownloadUrl, {
@@ -89,6 +124,39 @@ function RouteComponent() {
   const [newTagOpen, setNewTagOpen] = useState(false)
   const handleCreateTag = async (name: string, color?: string) => {
     await createTag({ name, color })
+  }
+
+  const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false)
+
+  const handleBulkDelete = async () => {
+    if (selectedFileIds.size === 0) return
+    if (
+      !confirm(
+        `Are you sure you want to delete ${selectedFileIds.size} file(s)? This action cannot be undone.`,
+      )
+    ) {
+      return
+    }
+    for (const fileId of selectedFileIds) {
+      await deleteFile({ fileId })
+    }
+    clearSelection()
+  }
+
+  const handleBulkAddTags = async (tagIdsToAdd: Array<Id<'tags'>>) => {
+    if (selectedFileIds.size === 0 || tagIdsToAdd.length === 0) return
+
+    for (const fileId of selectedFileIds) {
+      const fileRow = files.find((row) => row.file._id === fileId)
+      if (!fileRow) continue
+
+      const currentTagIds = fileRow.tags.map((t) => t._id)
+      const mergedTagIds = Array.from(
+        new Set([...currentTagIds, ...tagIdsToAdd]),
+      )
+      await setFileTags({ fileId, tagIds: mergedTagIds })
+    }
+    clearSelection()
   }
 
   const onToggleFilter = (tagId: Id<'tags'>) => {
@@ -123,7 +191,6 @@ function RouteComponent() {
           </p>
         </div>
         <Toolbar
-          onSelectFiles={handleToolbarSelectFiles}
           onCreateTag={handleCreateTag}
           newTagOpen={newTagOpen}
           setNewTagOpen={setNewTagOpen}
@@ -134,6 +201,10 @@ function RouteComponent() {
               navigate({ to: '/dashboard/sign-in' })
             })
           }}
+          selectedFileIds={selectedFileIds}
+          onClearSelection={clearSelection}
+          onBulkDelete={handleBulkDelete}
+          onBulkAddTags={() => setBulkTagDialogOpen(true)}
         />
       </div>
 
@@ -151,6 +222,13 @@ function RouteComponent() {
         </DialogContent>
       </Dialog>
 
+      <BulkTagDialog
+        open={bulkTagDialogOpen}
+        onOpenChange={setBulkTagDialogOpen}
+        allTags={tags}
+        onConfirm={handleBulkAddTags}
+      />
+
       <TagFilterBar
         tags={tags}
         selectedIds={selectedTagIds}
@@ -164,6 +242,8 @@ function RouteComponent() {
         onSetTags={onSetTags}
         onDownload={handleDownload}
         onDelete={(fileId) => deleteFile({ fileId: fileId })}
+        selectedFileIds={selectedFileIds}
+        onToggleFileSelection={toggleFileSelection}
         extraStart={
           <UploadArea
             onFiles={(selectedFiles) => {

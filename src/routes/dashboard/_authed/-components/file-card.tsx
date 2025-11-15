@@ -10,6 +10,8 @@ import { FileIcon } from './file-icon'
 import type { Doc, Id } from '@convex/_generated/dataModel'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { cn } from '@/lib/utils'
 import { useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import {
@@ -41,6 +43,8 @@ type Props = {
   onSetTags: (fileId: Id<'files'>, tagIds: Array<Id<'tags'>>) => void
   onDownload: (fileId: Id<'files'>) => void
   onDelete: (fileId: Id<'files'>) => void
+  isSelected?: boolean
+  onToggleSelection?: (fileId: Id<'files'>) => void
 }
 
 export function FileCard({
@@ -50,6 +54,8 @@ export function FileCard({
   onSetTags,
   onDownload,
   onDelete,
+  isSelected = false,
+  onToggleSelection,
 }: Props) {
   const kb = Math.max(1, Math.round(file.size / 1024))
   const [open, setOpen] = useState(false)
@@ -93,8 +99,28 @@ export function FileCard({
   const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen)
   }
+  const handleCheckboxChange = (checked: boolean) => {
+    if (onToggleSelection) {
+      onToggleSelection(file._id)
+    }
+  }
   return (
-    <Card className="p-4">
+    <Card className="group relative p-4">
+      {onToggleSelection && (
+        <div
+          className={cn(
+            'absolute left-2 top-2 transition-opacity',
+            isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+          )}
+        >
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={handleCheckboxChange}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Select ${file.filename}`}
+          />
+        </div>
+      )}
       <div className="flex items-start gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/30">
           {isImage && thumbnailUrl ? (

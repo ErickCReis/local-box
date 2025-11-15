@@ -15,6 +15,8 @@ type Props = {
   onSetTags: (fileId: Id<'files'>, tagIds: Array<Id<'tags'>>) => void
   onDownload: (fileId: Id<'files'>) => void
   onDelete: (fileId: Id<'files'>) => void
+  selectedFileIds?: Set<Id<'files'>>
+  onToggleFileSelection?: (fileId: Id<'files'>) => void
   extraStart?: ReactNode
 }
 
@@ -24,6 +26,8 @@ export function FileGrid({
   onSetTags,
   onDownload,
   onDelete,
+  selectedFileIds,
+  onToggleFileSelection,
   extraStart,
 }: Props) {
   return (
@@ -38,6 +42,8 @@ export function FileGrid({
           onSetTags={onSetTags}
           onDownload={onDownload}
           onDelete={onDelete}
+          isSelected={selectedFileIds?.has(row.file._id) ?? false}
+          onToggleSelection={onToggleFileSelection}
         />
       ))}
     </div>

@@ -1,38 +1,75 @@
-import { useRef } from 'react'
-import { Loader2Icon, UploadIcon } from 'lucide-react'
+import { Loader2Icon, Tag, Trash2Icon, UploadIcon, X } from 'lucide-react'
 import { TagCreateDialog } from './tag-create-dialog'
+import type { Id } from '@convex/_generated/dataModel'
 import { Button } from '@/components/ui/button'
 
 type Props = {
-  onSelectFiles: (files: FileList | null) => void
   onCreateTag: (name: string, color?: string) => Promise<void> | void
   newTagOpen: boolean
   setNewTagOpen: (open: boolean) => void
   hasActiveUploads: boolean
   onOpenUploads: () => void
   onSignOut: () => void
+  selectedFileIds?: Set<Id<'files'>>
+  onClearSelection?: () => void
+  onBulkDelete?: () => void
+  onBulkAddTags?: () => void
 }
 
 export function Toolbar({
-  onSelectFiles,
   onCreateTag,
   newTagOpen,
   setNewTagOpen,
   hasActiveUploads,
   onOpenUploads,
   onSignOut,
+  selectedFileIds,
+  onClearSelection,
+  onBulkDelete,
+  onBulkAddTags,
 }: Props) {
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const hasSelection = selectedFileIds && selectedFileIds.size > 0
+  const selectionCount = selectedFileIds?.size ?? 0
+
   return (
     <div className="flex items-center gap-2">
-      <input
-        ref={fileInputRef}
-        type="file"
-        multiple
-        className="hidden"
-        onChange={(e) => onSelectFiles(e.target.files)}
-      />
-      <Button onClick={() => fileInputRef.current?.click()}>Upload</Button>
+      {hasSelection && (
+        <>
+          <span className="whitespace-nowrap px-3 py-1.5 rounded-md bg-primary/10 text-sm font-medium">
+            {selectionCount} selected
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onBulkAddTags}
+            disabled={!onBulkAddTags}
+          >
+            <Tag className="h-4 w-4 mr-1.5" />
+            Add Tags
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onBulkDelete}
+            disabled={!onBulkDelete}
+            className="text-destructive hover:text-destructive"
+          >
+            <Trash2Icon className="h-4 w-4 mr-1.5" />
+            Delete
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onClearSelection}
+            disabled={!onClearSelection}
+            aria-label="Clear selection"
+            title="Clear selection"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+          <div className="h-6 w-px bg-border" />
+        </>
+      )}
       <Button
         variant="outline"
         size="icon"
