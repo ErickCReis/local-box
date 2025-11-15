@@ -32,20 +32,24 @@ export const Route = createFileRoute('/dashboard/_authed/')({
         .array(z.string())
         .default([])
         .transform((val) => val.map((v) => v as Id<'tags'>)),
+      files: z
+        .array(z.string())
+        .default([])
+        .transform((val) => val.map((v) => v as Id<'files'>)),
     }),
   ),
   search: {
-    middlewares: [stripSearchParams({ tags: [] })],
+    middlewares: [stripSearchParams({ tags: [], files: [] })],
   },
   component: RouteComponent,
 })
 
 function RouteComponent() {
-  const { tags: selectedTagIds } = Route.useSearch()
+  const { tags: selectedTagIds, files: selectedFileIds } = Route.useSearch()
 
   return (
     <FilesProvider selectedTagIds={selectedTagIds}>
-      <FileSelectionProvider>
+      <FileSelectionProvider selectedFileIds={selectedFileIds}>
         <UploadProvider defaultTagIds={selectedTagIds}>
           <RouteComponentContent />
         </UploadProvider>

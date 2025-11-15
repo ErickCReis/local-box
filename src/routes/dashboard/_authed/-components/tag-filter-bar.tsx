@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { CheckIcon, X } from 'lucide-react'
-import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import type { Doc, Id } from '@convex/_generated/dataModel'
@@ -25,13 +25,10 @@ const CATEGORY_LABELS: Record<TagCategory, string> = {
   custom: 'Custom',
 }
 
-// Get route reference for useSearch
-const Route = createFileRoute('/dashboard/_authed/')({})
-
 export function TagFilterBar() {
   const navigate = useNavigate()
   const tags = useQuery(api.tags.list, {}) ?? []
-  const { tags: selectedIds } = Route.useSearch()
+  const { tags: selectedIds } = useSearch({ from: '/dashboard/_authed/' })
   const selectedSet = useMemo(() => new Set(selectedIds), [selectedIds])
   const hasSelection = selectedIds.length > 0
 
@@ -68,7 +65,7 @@ export function TagFilterBar() {
     }
 
     for (const tag of tags) {
-      const category = tag.category || 'custom'
+      const category = tag.category
       if (category in groups) {
         groups[category as TagCategory].push(tag)
       } else {

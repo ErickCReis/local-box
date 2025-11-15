@@ -1,4 +1,5 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { api } from '@convex/_generated/api'
 import { useMutation } from 'convex/react'
 import { useFiles } from './files'
@@ -20,34 +21,57 @@ const FileSelectionContext = createContext<FileSelectionContextType | null>(
   null,
 )
 
-export function FileSelectionProvider({ children }: PropsWithChildren) {
-  const [selectedFileIds, setSelectedFileIds] = useState<Set<Id<'files'>>>(
-    new Set(),
+type FileSelectionProviderProps = PropsWithChildren<{
+  selectedFileIds: Array<Id<'files'>>
+}>
+
+export function FileSelectionProvider({
+  children,
+  selectedFileIds: selectedFileIdsArray,
+}: FileSelectionProviderProps) {
+  const navigate = useNavigate()
+  const selectedFileIds = useMemo(
+    () => new Set(selectedFileIdsArray),
+    [selectedFileIdsArray],
   )
-  const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false)
   const { files } = useFiles()
   const deleteFile = useMutation(api.files.remove)
   const setFileTags = useMutation(api.files.setTags)
+  const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false)
 
   const toggleFileSelection = (fileId: Id<'files'>) => {
-    setSelectedFileIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(fileId)) {
-        next.delete(fileId)
-      } else {
-        next.add(fileId)
-      }
-      return next
+    const set = new Set(selectedFileIdsArray)
+    if (set.has(fileId)) set.delete(fileId)
+    else set.add(fileId)
+    const next = Array.from(set)
+    navigate({
+      to: '.',
+      search: (prev) => ({
+        ...prev,
+        files: next.length ? next : undefined,
+      }),
+      replace: true,
     })
   }
 
   const selectAllFiles = () => {
-    const allFileIds = new Set<Id<'files'>>(files.map((row) => row.file._id))
-    setSelectedFileIds(allFileIds)
+    const allFileIds = files.map((row) => row.file._id)
+    navigate({
+      to: '.',
+      search: (prev) => ({
+        ...prev,
+        files: allFileIds.length ? allFileIds : undefined,
+      }),
+      replace: true,
+    })
   }
 
   const clearSelection = () => {
-    setSelectedFileIds(new Set())
+    navigate({
+      to: '.',
+      search: (prev) => ({ ...prev, files: undefined }),
+      replace: true,
+    })
   }
 
   useEffect(() => {
