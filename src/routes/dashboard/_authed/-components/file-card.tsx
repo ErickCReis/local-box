@@ -87,10 +87,10 @@ export function FileCard({ file, tags }: Props) {
   }
 
   const toggle = async (id: Id<'tags'>) => {
-    // Prevent toggling off system tags
+    // Prevent toggling system tags (cannot add or remove them manually)
     const tag = allTags.find((t) => t._id === id)
-    if (tag?.isSystem && selected.has(id)) {
-      // System tag is already selected, don't allow removing it
+    if (tag?.isSystem) {
+      // System tags cannot be manually added or removed
       return
     }
 
@@ -188,42 +188,49 @@ export function FileCard({ file, tags }: Props) {
               <TagsList>
                 <TagsEmpty>No tags found.</TagsEmpty>
                 <TagsGroup>
-                  {allTags.map((t) => {
-                    const active = selected.has(t._id)
-                    const isSystem = t.isSystem ?? false
-                    // System tags that are active cannot be toggled off
-                    const canToggle = !(isSystem && active)
-                    return (
-                      <TagsItem
-                        key={t._id}
-                        value={t.name}
-                        onSelect={canToggle ? () => toggle(t._id) : undefined}
-                        className={
-                          !canToggle
-                            ? 'cursor-not-allowed opacity-75'
-                            : undefined
-                        }
-                      >
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="h-2.5 w-2.5 rounded-full border"
-                            style={
-                              t.color
-                                ? {
-                                    backgroundColor: t.color,
-                                    borderColor: t.color,
-                                  }
-                                : undefined
-                            }
+                  {allTags
+                    .filter((t) => {
+                      // Hide system tags that are not currently on the file
+                      const isSystem = t.isSystem ?? false
+                      const isActive = selected.has(t._id)
+                      return !isSystem || isActive
+                    })
+                    .map((t) => {
+                      const active = selected.has(t._id)
+                      const isSystem = t.isSystem ?? false
+                      // System tags cannot be toggled manually (cannot add or remove)
+                      const canToggle = !isSystem
+                      return (
+                        <TagsItem
+                          key={t._id}
+                          value={t.name}
+                          onSelect={canToggle ? () => toggle(t._id) : undefined}
+                          className={
+                            !canToggle
+                              ? 'cursor-not-allowed opacity-75'
+                              : undefined
+                          }
+                        >
+                          <div className="flex items-center gap-2">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full border"
+                              style={
+                                t.color
+                                  ? {
+                                      backgroundColor: t.color,
+                                      borderColor: t.color,
+                                    }
+                                  : undefined
+                              }
+                            />
+                            <span>{t.name}</span>
+                          </div>
+                          <Check
+                            className={active ? 'opacity-100' : 'opacity-0'}
                           />
-                          <span>{t.name}</span>
-                        </div>
-                        <Check
-                          className={active ? 'opacity-100' : 'opacity-0'}
-                        />
-                      </TagsItem>
-                    )
-                  })}
+                        </TagsItem>
+                      )
+                    })}
                 </TagsGroup>
               </TagsList>
             </TagsContent>

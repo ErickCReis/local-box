@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ColorPicker } from '@/components/color-picker'
+import { isSystemTagName } from '@/lib/tag-colors'
 
 type Props = {
   open: boolean
@@ -31,7 +32,13 @@ export function TagCreateDialog({ open, onOpenChange, onCreate }: Props) {
     },
     validators: {
       onSubmit: z.object({
-        name: z.string().min(1, 'Name is required'),
+        name: z
+          .string()
+          .min(1, 'Name is required')
+          .refine(
+            (name) => !isSystemTagName(name.trim()),
+            'System tags cannot be created manually',
+          ),
         color: z.string(),
       }),
     },

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ColorPicker } from '@/components/color-picker'
+import { isSystemTagName } from '@/lib/tag-colors'
 
 export const Route = createFileRoute('/_host/admin/tags')({
   component: TagsPage,
@@ -29,13 +30,19 @@ function TagsPage() {
     onSubmit: async ({ value }) => {
       await createTag({
         name: value.name.trim(),
-        color: value.color.trim() || undefined,
+        color: value.color.trim(),
       })
       createForm.reset()
     },
     validators: {
       onSubmit: z.object({
-        name: z.string().min(1, 'Name is required'),
+        name: z
+          .string()
+          .min(1, 'Name is required')
+          .refine(
+            (name) => !isSystemTagName(name.trim()),
+            'System tags cannot be created manually',
+          ),
         color: z.string(),
       }),
     },
@@ -174,7 +181,14 @@ function TagEditForm({
     },
     validators: {
       onSubmit: z.object({
-        name: z.string().min(1, 'Name is required'),
+        name: z
+          .string()
+          .min(1, 'Name is required')
+          .refine((name) => {
+            const trimmed = name.trim()
+            // Allow renaming if it's already a system tag, but prevent non-system tags from being renamed to system tag names
+            return tag.isSystem || !isSystemTagName(trimmed)
+          }, 'Cannot rename tag to a system tag name'),
         color: z.string(),
       }),
     },

@@ -179,3 +179,50 @@ export function colorForTagName(name: string): string {
   }
   return ALL_TAG_COLORS[Math.abs(hash) % ALL_TAG_COLORS.length]
 }
+
+/**
+ * Valid size range tag names (must match convex/utils/tag_categories.ts)
+ */
+const SIZE_RANGE_TAGS = [
+  'Tiny',
+  'Small',
+  'Medium',
+  'Large',
+  'Huge',
+  'Very Large',
+] as const
+
+/**
+ * Check if a tag name would be considered a system tag
+ * System tags are: size ranges, file extensions, or owner tags
+ * This function must match the logic in convex/utils/tag_categories.ts
+ */
+export function isSystemTagName(tagName: string): boolean {
+  // Size range tags
+  if (SIZE_RANGE_TAGS.includes(tagName as any)) {
+    return true
+  }
+
+  // Owner tags contain "@"
+  if (tagName.includes('@')) {
+    return true
+  }
+
+  // Owner tags are exactly 10 characters (truncated emails)
+  if (tagName.length === 10 && !SIZE_RANGE_TAGS.includes(tagName as any)) {
+    return true
+  }
+
+  // File type tags are short lowercase strings (extensions)
+  // Typically 1-5 characters, all lowercase, no spaces, alphanumeric
+  if (
+    tagName.length <= 5 &&
+    tagName === tagName.toLowerCase() &&
+    !tagName.includes(' ') &&
+    /^[a-z0-9]+$/.test(tagName)
+  ) {
+    return true
+  }
+
+  return false
+}

@@ -59,9 +59,7 @@ async function getOrCreateSystemTag(
       category?: 'file_type' | 'size' | 'owner' | 'custom'
     } = { isSystem: true }
     // If tag doesn't have category, determine and set it
-    if (!existingTag.category) {
-      updates.category = determineTagCategory(tagName, true)
-    }
+    updates.category = determineTagCategory(tagName, true)
     await ctx.db.patch(existingTag._id, updates)
     return existingTag._id
   }
@@ -81,7 +79,7 @@ export const saveUploadedFile = mutation({
   args: {
     storageId: v.id('_storage'),
     filename: v.string(),
-    contentType: v.optional(v.string()),
+    contentType: v.string(),
     size: v.number(),
     tagIds: v.optional(v.array(v.id('tags'))),
     uploaderUserId: v.optional(v.string()),
@@ -227,8 +225,8 @@ export const list = query({
             _id: t._id,
             _creationTime: t._creationTime,
             name: t.name,
-            color: t.color ?? undefined,
-            isSystem: t.isSystem ?? undefined,
+            color: t.color,
+            isSystem: t.isSystem,
           })),
         }
       }),

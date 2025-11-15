@@ -1,7 +1,8 @@
 import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
+import { colorForTagName } from '../src/lib/tag-colors'
 import { internalMutation, mutation, query } from './_generated/server'
-import { determineTagCategory } from './utils/tag_categories'
+import { determineTagCategory, isSystemTagName } from './utils/tag_categories'
 
 export const list = query({
   args: {},
@@ -21,6 +22,10 @@ export const create = mutation({
     color: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    // Prevent creating system tags manually
+    if (isSystemTagName(args.name)) {
+      throw new Error('System tags cannot be created manually')
+    }
     // Prevent duplicate names globally
     const existing = await ctx.db
       .query('tags')
@@ -33,7 +38,8 @@ export const create = mutation({
     // User-created tags are always custom
     const id = await ctx.db.insert('tags', {
       name: args.name,
-      color: args.color,
+      color: args.color ?? colorForTagName(args.name),
+      isSystem: false,
       category: 'custom',
     })
     return id
@@ -49,6 +55,13 @@ export const rename = mutation({
   handler: async (ctx, args) => {
     const tag = await ctx.db.get(args.tagId)
     if (!tag) return null
+
+    // Prevent renaming to system tag names (unless it's already a system tag)
+    const isSystem = tag.isSystem
+    if (!isSystem && isSystemTagName(args.name)) {
+      throw new Error('Cannot rename tag to a system tag name')
+    }
+
     // Soft global uniqueness check
     const dup = await ctx.db
       .query('tags')
@@ -59,7 +72,6 @@ export const rename = mutation({
       throw new Error('Another tag with this name already exists')
     }
     // Recalculate category if tag is a system tag (category might change based on new name)
-    const isSystem = tag.isSystem ?? false
     const category = determineTagCategory(args.name, isSystem)
     await ctx.db.patch(args.tagId, {
       name: args.name,
@@ -118,13 +130,10 @@ export const categorizeAllTags = internalMutation({
     let updated = 0
 
     for (const tag of allTags) {
-      // Only update tags that don't have a category
-      if (!tag.category) {
-        const isSystem = tag.isSystem ?? false
-        const category = determineTagCategory(tag.name, isSystem)
-        await ctx.db.patch(tag._id, { category })
-        updated++
-      }
+      const isSystem = tag.isSystem
+      const category = determineTagCategory(tag.name, isSystem)
+      await ctx.db.patch(tag._id, { category })
+      updated++
     }
 
     return { updated }

@@ -23,22 +23,20 @@ export default defineSchema({
   // Tags are the only organization primitive (no folders), global
   tags: defineTable({
     name: v.string(),
-    color: v.optional(v.string()),
-    isSystem: v.optional(v.boolean()),
-    category: v.optional(
-      v.union(
-        v.literal('file_type'),
-        v.literal('size'),
-        v.literal('owner'),
-        v.literal('custom'),
-      ),
+    color: v.string(),
+    isSystem: v.boolean(),
+    category: v.union(
+      v.literal('file_type'),
+      v.literal('size'),
+      v.literal('owner'),
+      v.literal('custom'),
     ),
   }).index('by_name', ['name']),
   // Files stored in Convex storage, global
   files: defineTable({
     storageId: v.id('_storage'),
     filename: v.string(),
-    contentType: v.optional(v.string()),
+    contentType: v.string(),
     size: v.number(),
     uploaderUserId: v.optional(v.string()),
   }).index('by_uploader', ['uploaderUserId']),
