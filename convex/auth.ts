@@ -11,6 +11,7 @@ import {
 } from 'convex-helpers/server/customFunctions'
 import { components, internal } from './_generated/api'
 import { action, internalQuery, mutation, query } from './_generated/server'
+import authSchema from './betterAuth/schema'
 import type { ActionCtx, MutationCtx, QueryCtx } from './_generated/server'
 import type { BetterAuthPlugin } from 'better-auth'
 import type { DataModel, Doc } from './_generated/dataModel'
@@ -18,23 +19,29 @@ import type { AuthFunctions, GenericCtx } from '@convex-dev/better-auth'
 
 const authFunctions: AuthFunctions = internal.auth
 
-export const authComponent = createClient<DataModel>(components.betterAuth, {
-  verbose: true,
-  authFunctions,
-  triggers: {
-    user: {
-      onCreate: async (ctx, doc) => {
-        const anyMember = await ctx.db.query('members').first()
-        if (!anyMember) {
-          await ctx.db.insert('members', {
-            userId: doc._id,
-            role: 'owner',
-          })
-        }
+export const authComponent = createClient<DataModel, typeof authSchema>(
+  components.betterAuth,
+  {
+    verbose: true,
+    authFunctions,
+    local: {
+      schema: authSchema,
+    },
+    triggers: {
+      user: {
+        onCreate: async (ctx, doc) => {
+          const anyMember = await ctx.db.query('members').first()
+          if (!anyMember) {
+            await ctx.db.insert('members', {
+              userId: doc._id,
+              role: 'owner',
+            })
+          }
+        },
       },
     },
   },
-})
+)
 
 export const { onCreate, onUpdate, onDelete } = authComponent.triggersApi()
 
@@ -353,16 +360,16 @@ export function createAuth(
   if (autumnSecretKey) {
     plugins.push(
       autumn({
+        customerScope: 'user',
         identify: async ({ session }) => {
-          // Each host instance is its own customer
-          // Use a fixed identifier for this host instance
-          // In a multi-tenant setup, you might use the host URL or a unique host ID
-          const hostId = process.env.HOST_ID || 'default-host'
+          const sessionData = await session
+          if (!sessionData) return null
+
           return {
-            customerId: hostId,
+            customerId: sessionData.user.id,
             customerData: {
-              name: `Host ${hostId}`,
-              email: (await session)?.user.email || 'host@local-box.com',
+              name: sessionData.user.name,
+              email: sessionData.user.email,
             },
           }
         },

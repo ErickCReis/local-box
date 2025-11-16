@@ -1,13 +1,13 @@
 import { v } from 'convex/values'
 import { autumn } from 'autumn-js/better-auth'
-import { ownerAction, ownerMutation, ownerQuery } from './auth'
+import { memberQuery, ownerAction, ownerMutation } from './auth'
 import type { Product } from 'autumn-js'
 
 // Fixed product ID for billing
 export const FIXED_PRODUCT_ID = 'local-box'
 
 // Get the current host billing configuration
-export const getBillingConfig = ownerQuery({
+export const getBillingConfig = memberQuery({
   args: {},
   handler: async (ctx) => {
     // Get the first (and only) billing config record
