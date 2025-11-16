@@ -25,10 +25,13 @@ function MembersPage() {
 
   const inviteHost = quickTunnel.tunnel ?? hostUrl
 
-  const members = useQuery(api.members.listMembers, {}) ?? []
+  const allUsers = useQuery(api.members.listAllUsers, {}) ?? []
+  const members = allUsers.filter((u) => u.role !== null)
+  const nonMembers = allUsers.filter((u) => u.role === null)
 
   const updateRole = useMutation(api.members.updateRole)
   const removeMember = useMutation(api.members.removeMember)
+  const addMember = useMutation(api.members.addMember)
   const createInvite = useMutation(api.members.createInvite)
 
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
@@ -52,7 +55,7 @@ function MembersPage() {
 
   return (
     <main className="p-8 max-w-3xl mx-auto space-y-6">
-      <h1 className="text-2xl font-semibold">Members</h1>
+      <h1 className="text-2xl font-semibold">Users</h1>
 
       <section className="space-y-3">
         <h2 className="text-xl font-medium">Invite</h2>
@@ -143,28 +146,33 @@ function MembersPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-xl font-medium">Current Members</h2>
+        <h2 className="text-xl font-medium">Members</h2>
         <div className="grid gap-2">
           {members.length === 0 ? (
             <div className="text-sm text-muted-foreground">No members yet</div>
           ) : (
-            members.map((m) => (
+            members.map((user) => (
               <div
-                key={`${m.userId}`}
+                key={user._id}
                 className="flex items-center justify-between border rounded p-3"
               >
                 <div>
-                  <div className="font-medium">{m.userId}</div>
+                  <div className="font-medium">
+                    {user.name || user.email || user._id}
+                  </div>
                   <div className="text-sm text-muted-foreground">
-                    Role: {m.role}
+                    {user.email && user.email !== user._id && (
+                      <span>{user.email}</span>
+                    )}
+                    {user.role && <span> • Role: {user.role}</span>}
                   </div>
                 </div>
                 <div className="flex gap-2 items-center">
                   <Select
-                    value={m.role}
+                    value={user.role || ''}
                     onValueChange={(role) =>
                       updateRole({
-                        userId: m.userId,
+                        userId: user._id,
                         role: role as any,
                       })
                     }
@@ -181,9 +189,52 @@ function MembersPage() {
                   <Button
                     size="sm"
                     variant="destructive"
-                    onClick={() => removeMember({ userId: m.userId })}
+                    onClick={() => removeMember({ userId: user._id })}
                   >
                     Remove
+                  </Button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-xl font-medium">Non-Members</h2>
+        <div className="grid gap-2">
+          {nonMembers.length === 0 ? (
+            <div className="text-sm text-muted-foreground">
+              All users are members
+            </div>
+          ) : (
+            nonMembers.map((user) => (
+              <div
+                key={user._id}
+                className="flex items-center justify-between border rounded p-3"
+              >
+                <div>
+                  <div className="font-medium">
+                    {user.name || user.email || user._id}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {user.email && user.email !== user._id && (
+                      <span>{user.email}</span>
+                    )}
+                    {!user.email && <span>User ID: {user._id}</span>}
+                  </div>
+                </div>
+                <div className="flex gap-2 items-center">
+                  <Button
+                    size="sm"
+                    onClick={() =>
+                      addMember({
+                        userId: user._id,
+                        role: 'member',
+                      })
+                    }
+                  >
+                    Add as Member
                   </Button>
                 </div>
               </div>

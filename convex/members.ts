@@ -1,12 +1,40 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { api } from './_generated/api'
+import { createAuth } from './auth'
 
 export const listMembers = query({
   args: {},
   handler: async (ctx) => {
     const rows = await ctx.db.query('members').collect()
     return rows.map((r) => ({ userId: r.userId, role: r.role }))
+  },
+})
+
+export const listAllUsers = query({
+  args: {},
+  handler: async (ctx) => {
+    const members = await ctx.db.query('members').collect()
+    const memberMap = new Map(
+      members.map((m) => [m.userId, m.role] as [string, string]),
+    )
+
+    const auth = createAuth(ctx)
+    const users = await (
+      await auth.$context
+    ).adapter.findMany({ model: 'user' })
+
+    const allUsers = users.map((user: any) => {
+      const memberRole = memberMap.get(user.id)
+      return {
+        _id: user.id as string,
+        name: (user.name as string) || '',
+        email: (user.email as string) || '',
+        role: memberRole ? (memberRole as 'owner' | 'admin' | 'member') : null,
+      }
+    })
+
+    return allUsers
   },
 })
 
@@ -94,6 +122,34 @@ export const removeMember = mutation({
     if (membership) {
       await ctx.db.delete(membership._id)
     }
+    return null
+  },
+})
+
+export const addMember = mutation({
+  args: {
+    userId: v.string(),
+    role: v.union(v.literal('admin'), v.literal('member')),
+  },
+  returns: v.null(),
+  handler: async (ctx, { userId, role }) => {
+    const currentUser = await ctx.runQuery(api.auth.getCurrentUser)
+    if (!currentUser) throw new Error('Not signed in')
+
+    // Check if user is already a member
+    const existing = await ctx.db
+      .query('members')
+      .withIndex('by_user', (q) => q.eq('userId', userId))
+      .first()
+
+    if (existing) {
+      throw new Error('User is already a member')
+    }
+
+    await ctx.db.insert('members', {
+      userId,
+      role,
+    })
     return null
   },
 })
