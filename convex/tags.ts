@@ -2,9 +2,10 @@ import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { colorForTagName } from '../src/lib/tag-colors'
 import { internalMutation, mutation, query } from './_generated/server'
+import { memberMutation, memberQuery } from './auth'
 import { determineTagCategory, isSystemTagName } from './utils/tag_categories'
 
-export const list = query({
+export const list = memberQuery({
   args: {},
   handler: async (ctx) => {
     const tags = await ctx.db
@@ -82,7 +83,7 @@ export const rename = mutation({
   },
 })
 
-export const remove = mutation({
+export const remove = memberMutation({
   args: { tagId: v.id('tags') },
   handler: async (ctx, args) => {
     const tag = await ctx.db.get(args.tagId)
@@ -100,7 +101,7 @@ export const remove = mutation({
   },
 })
 
-export const listPage = query({
+export const listPage = memberQuery({
   args: { paginationOpts: paginationOptsValidator },
   handler: async (ctx, args) => {
     const result = await ctx.db

@@ -3,10 +3,17 @@ import { convex } from '@convex-dev/better-auth/plugins'
 import { betterAuth } from 'better-auth'
 import { autumn } from 'autumn-js/better-auth'
 import { v } from 'convex/values'
+import {
+  customAction,
+  customCtx,
+  customMutation,
+  customQuery,
+} from 'convex-helpers/server/customFunctions'
 import { components, internal } from './_generated/api'
-import { mutation, query } from './_generated/server'
+import { action, internalQuery, mutation, query } from './_generated/server'
+import type { ActionCtx, MutationCtx, QueryCtx } from './_generated/server'
 import type { BetterAuthPlugin } from 'better-auth'
-import type { DataModel } from './_generated/dataModel'
+import type { DataModel, Doc } from './_generated/dataModel'
 import type { AuthFunctions, GenericCtx } from '@convex-dev/better-auth'
 
 const authFunctions: AuthFunctions = internal.auth
@@ -87,6 +94,183 @@ export const hasOwner = query({
     return owner !== null
   },
 })
+
+// Internal query to get member by userId (used by actions)
+export const getMemberByUserId = internalQuery({
+  args: { userId: v.string() },
+  handler: async (ctx, { userId }) => {
+    const member = await ctx.db
+      .query('members')
+      .withIndex('by_user', (q: any) => q.eq('userId', userId))
+      .first()
+    return member
+  },
+})
+
+// Helper function to get user and member data for queries and mutations
+async function getUserAndMember(ctx: QueryCtx | MutationCtx) {
+  const user = await authComponent.safeGetAuthUser(ctx)
+  if (!user) {
+    throw new Error('Authentication required')
+  }
+
+  const member = await ctx.db
+    .query('members')
+    .withIndex('by_user', (q: any) => q.eq('userId', user._id))
+    .first()
+
+  if (!member) {
+    throw new Error('Member access required')
+  }
+
+  return { user, member }
+}
+
+// Helper function to get user and member data for actions
+async function getUserAndMemberAction(ctx: ActionCtx): Promise<{
+  user: { _id: string; name: string | null; email: string | null }
+  member: Doc<'members'>
+}> {
+  const user = await authComponent.safeGetAuthUser(ctx)
+  if (!user) {
+    throw new Error('Authentication required')
+  }
+
+  const member = await ctx.runQuery(internal.auth.getMemberByUserId, {
+    userId: user._id,
+  })
+
+  if (!member) {
+    throw new Error('Member access required')
+  }
+
+  return { user, member }
+}
+
+// Custom functions for member access (owner, admin, or member)
+export const memberQuery = customQuery(
+  query,
+  customCtx(async (ctx) => {
+    const { user, member } = await getUserAndMember(ctx)
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      member: {
+        _id: member._id,
+        userId: member.userId,
+        role: member.role,
+      },
+    }
+  }),
+)
+
+export const memberMutation = customMutation(
+  mutation,
+  customCtx(async (ctx) => {
+    const { user, member } = await getUserAndMember(ctx)
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      member: {
+        _id: member._id,
+        userId: member.userId,
+        role: member.role,
+      },
+    }
+  }),
+)
+
+export const memberAction = customAction(
+  action,
+  customCtx(async (ctx) => {
+    const { user, member } = await getUserAndMemberAction(ctx)
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      member: {
+        _id: member._id,
+        userId: member.userId,
+        role: member.role,
+      },
+    }
+  }),
+)
+
+// Custom functions for admin access (admin or owner only)
+export const adminQuery = customQuery(
+  query,
+  customCtx(async (ctx) => {
+    const { user, member } = await getUserAndMember(ctx)
+    if (member.role !== 'admin' && member.role !== 'owner') {
+      throw new Error('Admin access required')
+    }
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      member: {
+        _id: member._id,
+        userId: member.userId,
+        role: member.role,
+      },
+    }
+  }),
+)
+
+export const adminMutation = customMutation(
+  mutation,
+  customCtx(async (ctx) => {
+    const { user, member } = await getUserAndMember(ctx)
+    if (member.role !== 'admin' && member.role !== 'owner') {
+      throw new Error('Admin access required')
+    }
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      member: {
+        _id: member._id,
+        userId: member.userId,
+        role: member.role,
+      },
+    }
+  }),
+)
+
+export const adminAction = customAction(
+  action,
+  customCtx(async (ctx) => {
+    const { user, member } = await getUserAndMemberAction(ctx)
+    if (member.role !== 'admin' && member.role !== 'owner') {
+      throw new Error('Admin access required')
+    }
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      member: {
+        _id: member._id,
+        userId: member.userId,
+        role: member.role,
+      },
+    }
+  }),
+)
 
 export function createAuth(
   ctx: GenericCtx<DataModel>,

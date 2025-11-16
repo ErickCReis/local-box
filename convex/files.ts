@@ -2,13 +2,12 @@ import { v } from 'convex/values'
 import { paginationOptsValidator } from 'convex/server'
 import { getManyViaOrThrow } from 'convex-helpers/server/relationships'
 import { colorForTagName } from '../src/lib/tag-colors'
-import { action, mutation, query } from './_generated/server'
-import { authComponent } from './auth'
+import { memberAction, memberMutation, memberQuery } from './auth'
 import { determineTagCategory } from './utils/tag_categories'
 import type { Id } from './_generated/dataModel'
 import type { MutationCtx } from './_generated/server'
 
-export const generateUploadUrl = action({
+export const generateUploadUrl = memberAction({
   args: {},
   handler: async (ctx) => {
     return await ctx.storage.generateUploadUrl()
@@ -75,7 +74,7 @@ async function getOrCreateSystemTag(
   })
 }
 
-export const saveUploadedFile = mutation({
+export const saveUploadedFile = memberMutation({
   args: {
     storageId: v.id('_storage'),
     filename: v.string(),
@@ -105,9 +104,8 @@ export const saveUploadedFile = mutation({
 
     // Get current authenticated user and create/get user tag
     let userTagId: Id<'tags'> | null = null
-    const user = await authComponent.safeGetAuthUser(ctx)
-    if (user && user.email) {
-      const truncatedEmail = truncateEmail(user.email)
+    if (ctx.user.email) {
+      const truncatedEmail = truncateEmail(ctx.user.email)
       userTagId = await getOrCreateSystemTag(ctx, truncatedEmail)
     }
 
@@ -146,7 +144,7 @@ export const saveUploadedFile = mutation({
   },
 })
 
-export const list = query({
+export const list = memberQuery({
   args: {
     tagId: v.optional(v.id('tags')),
     tagIds: v.optional(v.array(v.id('tags'))),
@@ -235,7 +233,7 @@ export const list = query({
   },
 })
 
-export const listPage = query({
+export const listPage = memberQuery({
   args: {
     paginationOpts: paginationOptsValidator,
     tagId: v.optional(v.id('tags')),
@@ -329,7 +327,7 @@ export const listPage = query({
   },
 })
 
-export const getDownloadUrl = query({
+export const getDownloadUrl = memberQuery({
   args: { fileId: v.id('files') },
   handler: async (ctx, args) => {
     const file = await ctx.db.get(args.fileId)
@@ -339,7 +337,7 @@ export const getDownloadUrl = query({
   },
 })
 
-export const remove = mutation({
+export const remove = memberMutation({
   args: { fileId: v.id('files') },
   handler: async (ctx, args) => {
     const file = await ctx.db.get(args.fileId)
@@ -360,7 +358,7 @@ export const remove = mutation({
   },
 })
 
-export const setTags = mutation({
+export const setTags = memberMutation({
   args: {
     fileId: v.id('files'),
     tagIds: v.array(v.id('tags')),

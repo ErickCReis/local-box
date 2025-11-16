@@ -1,7 +1,7 @@
 import { v } from 'convex/values'
 import { mutation, query } from './_generated/server'
 import { api } from './_generated/api'
-import { createAuth } from './auth'
+import { adminMutation, adminQuery, createAuth } from './auth'
 
 export const listMembers = query({
   args: {},
@@ -11,7 +11,7 @@ export const listMembers = query({
   },
 })
 
-export const listAllUsers = query({
+export const listAllUsers = adminQuery({
   args: {},
   handler: async (ctx) => {
     const members = await ctx.db.query('members').collect()
@@ -38,16 +38,13 @@ export const listAllUsers = query({
   },
 })
 
-export const createInvite = mutation({
+export const createInvite = adminMutation({
   args: {
     role: v.union(v.literal('admin'), v.literal('member')),
     email: v.optional(v.string()),
     ttlMinutes: v.optional(v.number()),
   },
   handler: async (ctx, { role, email, ttlMinutes }) => {
-    const currentUser = await ctx.runQuery(api.auth.getCurrentUser)
-    if (!currentUser) throw new Error('Not signed in')
-
     const code = Math.random().toString(36).slice(2, 10)
     const expiresAt = Date.now() + (ttlMinutes ?? 60) * 60_000
 
@@ -56,7 +53,7 @@ export const createInvite = mutation({
       role,
       email,
       expiresAt,
-      createdBy: currentUser._id,
+      createdBy: ctx.user._id,
     })
 
     return { code }
@@ -95,7 +92,7 @@ export const acceptInvite = mutation({
   },
 })
 
-export const updateRole = mutation({
+export const updateRole = adminMutation({
   args: {
     userId: v.string(),
     role: v.union(v.literal('owner'), v.literal('admin'), v.literal('member')),
@@ -106,12 +103,18 @@ export const updateRole = mutation({
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique()
     if (!membership) throw new Error('Member not found')
+
+    // Prevent changing owner role
+    if (membership.role === 'owner') {
+      throw new Error('Cannot change owner role')
+    }
+
     await ctx.db.patch(membership._id, { role })
     return null
   },
 })
 
-export const removeMember = mutation({
+export const removeMember = adminMutation({
   args: { userId: v.string() },
   returns: v.null(),
   handler: async (ctx, { userId }) => {
@@ -119,23 +122,27 @@ export const removeMember = mutation({
       .query('members')
       .withIndex('by_user', (q) => q.eq('userId', userId))
       .unique()
-    if (membership) {
-      await ctx.db.delete(membership._id)
+    if (!membership) {
+      throw new Error('Member not found')
     }
+
+    // Prevent removing owner
+    if (membership.role === 'owner') {
+      throw new Error('Cannot remove owner')
+    }
+
+    await ctx.db.delete(membership._id)
     return null
   },
 })
 
-export const addMember = mutation({
+export const addMember = adminMutation({
   args: {
     userId: v.string(),
     role: v.union(v.literal('admin'), v.literal('member')),
   },
   returns: v.null(),
   handler: async (ctx, { userId, role }) => {
-    const currentUser = await ctx.runQuery(api.auth.getCurrentUser)
-    if (!currentUser) throw new Error('Not signed in')
-
     // Check if user is already a member
     const existing = await ctx.db
       .query('members')

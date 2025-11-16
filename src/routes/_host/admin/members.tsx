@@ -168,28 +168,39 @@ function MembersPage() {
                   </div>
                 </div>
                 <div className="flex gap-2 items-center">
-                  <Select
-                    value={user.role || ''}
-                    onValueChange={(role) =>
-                      updateRole({
-                        userId: user._id,
-                        role: role as any,
-                      })
-                    }
-                  >
-                    <SelectTrigger className="w-[140px]">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="owner">Owner</SelectItem>
-                      <SelectItem value="admin">Admin</SelectItem>
-                      <SelectItem value="member">Member</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  {user.role === 'owner' ? (
+                    <div className="text-sm text-muted-foreground px-3 py-2">
+                      Owner (cannot be changed)
+                    </div>
+                  ) : (
+                    <Select
+                      value={user.role || ''}
+                      onValueChange={(role) =>
+                        updateRole({
+                          userId: user._id,
+                          role: role as any,
+                        })
+                      }
+                    >
+                      <SelectTrigger className="w-[140px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="member">Member</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                   <Button
                     size="sm"
                     variant="destructive"
+                    disabled={user.role === 'owner'}
                     onClick={() => removeMember({ userId: user._id })}
+                    title={
+                      user.role === 'owner'
+                        ? 'Cannot remove owner'
+                        : 'Remove member'
+                    }
                   >
                     Remove
                   </Button>
