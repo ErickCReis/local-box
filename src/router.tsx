@@ -16,7 +16,7 @@ export function getRouter() {
     defaultPreload: 'intent',
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
-    defaultErrorComponent: (err) => <p>{err.error.stack}</p>,
+    defaultErrorComponent: (err) => <p>{err.error.message}</p>,
     defaultNotFoundComponent: () => <p>not found</p>,
   })
 

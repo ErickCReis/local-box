@@ -6,7 +6,8 @@
   "scripts": {
     "dev:web": "bun --bun vite dev",
     "dev:convex": "bun convex dev",
-    "build": "bun --bun vite build",
+    "build:host": "BUILD_MODE=host bun --bun vite build",
+    "build:client": "BUILD_MODE=client bun --bun vite build",
     "start": "bun .output/server/index.mjs"
   },
   "dependencies": {

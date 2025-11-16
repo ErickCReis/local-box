@@ -1,5 +1,5 @@
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
-import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
+import { Link, Outlet, createFileRoute, notFound } from '@tanstack/react-router'
 import {
   ChevronDown,
   Copy,
@@ -22,6 +22,13 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 export const Route = createFileRoute('/_host')({
+  beforeLoad: () => {
+    // Block access in client mode
+    const buildMode = import.meta.env.BUILD_MODE || 'host'
+    if (buildMode === 'client') {
+      throw notFound()
+    }
+  },
   loader: async ({ context }) => {
     await context.queryClient.ensureQueryData(queries.options())
   },

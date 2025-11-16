@@ -8,6 +8,9 @@ import { devtools } from '@tanstack/devtools-vite'
 import { nitro } from 'nitro/vite'
 
 export default defineConfig((ctx) => {
+  const buildMode = process.env.BUILD_MODE || 'host'
+  const isClientMode = buildMode === 'client'
+
   return {
     server: {
       port: process.env.PORT ? parseInt(process.env.PORT) : 3000,
@@ -16,17 +19,35 @@ export default defineConfig((ctx) => {
     optimizeDeps: {
       exclude: ['ssh2', 'cpu-features'],
     },
+    define: {
+      'import.meta.env.BUILD_MODE': JSON.stringify(buildMode),
+    },
     plugins: [
       devtools({ enhancedLogs: { enabled: false } }),
       tailwindcss(),
       tsConfigPaths(),
-      tanstackStart({}),
+      tanstackStart({
+        pages: [
+          {
+            path: '/',
+            prerender: { enabled: true, crawlLinks: false },
+          },
+        ],
+        sitemap: {
+          enabled: true,
+          host: 'https://local-box.com',
+        },
+      }),
       viteReact({
         babel: {
           plugins: ['babel-plugin-react-compiler'],
         },
       }),
-      ctx.command === 'build' ? nitro({ preset: 'bun' }) : null,
+      ctx.command === 'build'
+        ? nitro({
+            preset: isClientMode ? 'netlify' : 'bun',
+          })
+        : null,
     ],
   }
 })
