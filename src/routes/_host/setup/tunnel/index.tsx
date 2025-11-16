@@ -1,32 +1,43 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useMutation } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query'
 import { Info, X } from 'lucide-react'
 import { mutations } from './-mutations'
-import { getQuickTunnels } from './-server'
+import { queries } from './-queries'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 
 export const Route = createFileRoute('/_host/setup/tunnel/')({
   component: TunnelTab,
-  loader: async () => {
-    return {
-      quickTunnel: await getQuickTunnels(),
-    }
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(queries.tunnelStatus.options())
   },
 })
 
 function TunnelTab() {
-  const context = Route.useLoaderData()
-  const [publicUrl, setPublicUrl] = useState(context.quickTunnel.tunnel)
+  const queryClient = useQueryClient()
+  const { data: tunnelData } = useSuspenseQuery(
+    queries.tunnelStatus.useOptions(),
+  )
+  const [publicUrl, setPublicUrl] = useState(tunnelData.tunnel)
   const [dismissBanner, setDismissBanner] = useState(false)
+
+  // Sync local state with query data
+  useEffect(() => {
+    setPublicUrl(tunnelData.tunnel)
+  }, [tunnelData.tunnel])
 
   // Tunnel actions
   const startTunnelsMutation = useMutation({
     ...mutations.tunnelStart.options(),
     onSuccess: (res) => {
       setPublicUrl(res.tunnel)
+      queries.tunnelStatus.invalidate(queryClient)
     },
   })
 
@@ -34,6 +45,7 @@ function TunnelTab() {
     ...mutations.tunnelStop.options(),
     onSuccess: () => {
       setPublicUrl(null)
+      queries.tunnelStatus.invalidate(queryClient)
     },
   })
 

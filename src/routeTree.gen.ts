@@ -15,7 +15,6 @@ import { Route as HostRouteRouteImport } from './routes/_host/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardSignUpRouteImport } from './routes/dashboard/sign-up'
 import { Route as DashboardSignInRouteImport } from './routes/dashboard/sign-in'
-import { Route as DashboardBillingRouteImport } from './routes/dashboard/billing'
 import { Route as ApiPingRouteImport } from './routes/api/ping'
 import { Route as DashboardAuthedRouteRouteImport } from './routes/dashboard/_authed/route'
 import { Route as HostSetupRouteRouteImport } from './routes/_host/setup/route'
@@ -23,6 +22,7 @@ import { Route as HostAdminRouteRouteImport } from './routes/_host/admin/route'
 import { Route as DashboardAuthedIndexRouteImport } from './routes/dashboard/_authed/index'
 import { Route as HostSetupIndexRouteImport } from './routes/_host/setup/index'
 import { Route as HostAdminIndexRouteImport } from './routes/_host/admin/index'
+import { Route as DashboardAuthedBillingRouteImport } from './routes/dashboard/_authed/billing'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as HostAdminTagsRouteImport } from './routes/_host/admin/tags'
 import { Route as HostAdminMembersRouteImport } from './routes/_host/admin/members'
@@ -61,11 +61,6 @@ const DashboardSignInRoute = DashboardSignInRouteImport.update({
   path: '/sign-in',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
-const DashboardBillingRoute = DashboardBillingRouteImport.update({
-  id: '/billing',
-  path: '/billing',
-  getParentRoute: () => DashboardRouteRoute,
-} as any)
 const ApiPingRoute = ApiPingRouteImport.update({
   id: '/api/ping',
   path: '/api/ping',
@@ -99,6 +94,11 @@ const HostAdminIndexRoute = HostAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => HostAdminRouteRoute,
+} as any)
+const DashboardAuthedBillingRoute = DashboardAuthedBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => DashboardAuthedRouteRoute,
 } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
@@ -148,12 +148,12 @@ export interface FileRoutesByFullPath {
   '/admin': typeof HostAdminRouteRouteWithChildren
   '/setup': typeof HostSetupRouteRouteWithChildren
   '/api/ping': typeof ApiPingRoute
-  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/sign-in': typeof DashboardSignInRoute
   '/dashboard/sign-up': typeof DashboardSignUpRoute
   '/admin/members': typeof HostAdminMembersRoute
   '/admin/tags': typeof HostAdminTagsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/dashboard/billing': typeof DashboardAuthedBillingRoute
   '/admin/': typeof HostAdminIndexRoute
   '/setup/': typeof HostSetupIndexRoute
   '/dashboard/': typeof DashboardAuthedIndexRoute
@@ -168,12 +168,12 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardAuthedIndexRoute
   '/enter-host': typeof EnterHostRoute
   '/api/ping': typeof ApiPingRoute
-  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/sign-in': typeof DashboardSignInRoute
   '/dashboard/sign-up': typeof DashboardSignUpRoute
   '/admin/members': typeof HostAdminMembersRoute
   '/admin/tags': typeof HostAdminTagsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/dashboard/billing': typeof DashboardAuthedBillingRoute
   '/admin': typeof HostAdminIndexRoute
   '/setup': typeof HostSetupIndexRoute
   '/setup/auth': typeof HostSetupAuthIndexRoute
@@ -192,12 +192,12 @@ export interface FileRoutesById {
   '/_host/setup': typeof HostSetupRouteRouteWithChildren
   '/dashboard/_authed': typeof DashboardAuthedRouteRouteWithChildren
   '/api/ping': typeof ApiPingRoute
-  '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/sign-in': typeof DashboardSignInRoute
   '/dashboard/sign-up': typeof DashboardSignUpRoute
   '/_host/admin/members': typeof HostAdminMembersRoute
   '/_host/admin/tags': typeof HostAdminTagsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/dashboard/_authed/billing': typeof DashboardAuthedBillingRoute
   '/_host/admin/': typeof HostAdminIndexRoute
   '/_host/setup/': typeof HostSetupIndexRoute
   '/dashboard/_authed/': typeof DashboardAuthedIndexRoute
@@ -216,12 +216,12 @@ export interface FileRouteTypes {
     | '/admin'
     | '/setup'
     | '/api/ping'
-    | '/dashboard/billing'
     | '/dashboard/sign-in'
     | '/dashboard/sign-up'
     | '/admin/members'
     | '/admin/tags'
     | '/api/auth/$'
+    | '/dashboard/billing'
     | '/admin/'
     | '/setup/'
     | '/dashboard/'
@@ -236,12 +236,12 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/enter-host'
     | '/api/ping'
-    | '/dashboard/billing'
     | '/dashboard/sign-in'
     | '/dashboard/sign-up'
     | '/admin/members'
     | '/admin/tags'
     | '/api/auth/$'
+    | '/dashboard/billing'
     | '/admin'
     | '/setup'
     | '/setup/auth'
@@ -259,12 +259,12 @@ export interface FileRouteTypes {
     | '/_host/setup'
     | '/dashboard/_authed'
     | '/api/ping'
-    | '/dashboard/billing'
     | '/dashboard/sign-in'
     | '/dashboard/sign-up'
     | '/_host/admin/members'
     | '/_host/admin/tags'
     | '/api/auth/$'
+    | '/dashboard/_authed/billing'
     | '/_host/admin/'
     | '/_host/setup/'
     | '/dashboard/_authed/'
@@ -328,13 +328,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSignInRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
-    '/dashboard/billing': {
-      id: '/dashboard/billing'
-      path: '/billing'
-      fullPath: '/dashboard/billing'
-      preLoaderRoute: typeof DashboardBillingRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
     '/api/ping': {
       id: '/api/ping'
       path: '/api/ping'
@@ -383,6 +376,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof HostAdminIndexRouteImport
       parentRoute: typeof HostAdminRouteRoute
+    }
+    '/dashboard/_authed/billing': {
+      id: '/dashboard/_authed/billing'
+      path: '/billing'
+      fullPath: '/dashboard/billing'
+      preLoaderRoute: typeof DashboardAuthedBillingRouteImport
+      parentRoute: typeof DashboardAuthedRouteRoute
     }
     '/api/auth/$': {
       id: '/api/auth/$'
@@ -496,10 +496,12 @@ const HostRouteRouteWithChildren = HostRouteRoute._addFileChildren(
 )
 
 interface DashboardAuthedRouteRouteChildren {
+  DashboardAuthedBillingRoute: typeof DashboardAuthedBillingRoute
   DashboardAuthedIndexRoute: typeof DashboardAuthedIndexRoute
 }
 
 const DashboardAuthedRouteRouteChildren: DashboardAuthedRouteRouteChildren = {
+  DashboardAuthedBillingRoute: DashboardAuthedBillingRoute,
   DashboardAuthedIndexRoute: DashboardAuthedIndexRoute,
 }
 
@@ -508,14 +510,12 @@ const DashboardAuthedRouteRouteWithChildren =
 
 interface DashboardRouteRouteChildren {
   DashboardAuthedRouteRoute: typeof DashboardAuthedRouteRouteWithChildren
-  DashboardBillingRoute: typeof DashboardBillingRoute
   DashboardSignInRoute: typeof DashboardSignInRoute
   DashboardSignUpRoute: typeof DashboardSignUpRoute
 }
 
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardAuthedRouteRoute: DashboardAuthedRouteRouteWithChildren,
-  DashboardBillingRoute: DashboardBillingRoute,
   DashboardSignInRoute: DashboardSignInRoute,
   DashboardSignUpRoute: DashboardSignUpRoute,
 }

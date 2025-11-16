@@ -3,7 +3,7 @@ import { defineConfig } from 'vite'
 import tsConfigPaths from 'vite-tsconfig-paths'
 import tailwindcss from '@tailwindcss/vite'
 import viteReact from '@vitejs/plugin-react'
-import netlify from '@netlify/vite-plugin-tanstack-start'
+import { nitro } from 'nitro/vite'
 
 export default defineConfig((ctx) => {
   return {
@@ -17,9 +17,9 @@ export default defineConfig((ctx) => {
     plugins: [
       tailwindcss(),
       tsConfigPaths(),
-      tanstackStart(),
+      tanstackStart({}),
       viteReact(),
-      ctx.command === 'build' ? netlify() : null,
+      ctx.command === 'build' ? nitro({ preset: 'netlify' }) : null,
     ],
   }
 })

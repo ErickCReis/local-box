@@ -9,6 +9,12 @@ export const queries = {
     options() {
       return queryOptions({
         queryKey: this.key,
+        queryFn: getBillingConfig,
+      })
+    },
+    useOptions() {
+      return queryOptions({
+        queryKey: this.key,
         queryFn: useServerFn(getBillingConfig),
         refetchInterval: 5000,
       })

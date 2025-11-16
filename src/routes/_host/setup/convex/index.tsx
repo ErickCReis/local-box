@@ -1,11 +1,17 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useQuery } from '@tanstack/react-query'
+import { useSuspenseQuery } from '@tanstack/react-query'
 import { CheckCircle2, Circle, Loader2, XCircle } from 'lucide-react'
 import { queries } from './-queries'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
 export const Route = createFileRoute('/_host/setup/convex/')({
   component: ConvexTab,
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(queries.convexHealth.options()),
+      context.queryClient.ensureQueryData(queries.convexAdminKey.options()),
+    ])
+  },
 })
 
 type StepStatus = 'pending' | 'checking' | 'success' | 'error'
@@ -56,26 +62,22 @@ function StatusStep({
 
 function ConvexTab() {
   // Check Convex health
-  const { data: healthStatus, isLoading: healthLoading } = useQuery(
-    queries.convexHealth.options(),
+  const { data: healthStatus } = useSuspenseQuery(
+    queries.convexHealth.useOptions(),
   )
 
   // Check admin key
-  const { data: adminKeyStatus, isLoading: adminKeyLoading } = useQuery(
-    queries.convexAdminKey.options(),
+  const { data: adminKeyStatus } = useSuspenseQuery(
+    queries.convexAdminKey.useOptions(),
   )
 
-  const healthStepStatus: StepStatus = healthLoading
-    ? 'checking'
-    : healthStatus?.healthy
-      ? 'success'
-      : 'error'
+  const healthStepStatus: StepStatus = healthStatus.healthy
+    ? 'success'
+    : 'error'
 
-  const adminKeyStepStatus: StepStatus = adminKeyLoading
-    ? 'checking'
-    : adminKeyStatus?.configured
-      ? 'success'
-      : 'error'
+  const adminKeyStepStatus: StepStatus = adminKeyStatus.configured
+    ? 'success'
+    : 'error'
 
   return (
     <div className="space-y-6">
@@ -94,8 +96,8 @@ function ConvexTab() {
           message="Container Health"
           error={
             healthStepStatus === 'error'
-              ? healthStatus?.error ||
-                `Container is not healthy (status: ${healthStatus?.status || 'unknown'})`
+              ? healthStatus.error ||
+                `Container is not healthy (status: ${healthStatus.status || 'unknown'})`
               : undefined
           }
         />

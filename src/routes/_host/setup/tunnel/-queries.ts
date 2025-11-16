@@ -1,21 +1,21 @@
 import { queryOptions } from '@tanstack/react-query'
 import { useServerFn } from '@tanstack/react-start'
-import { checkAuthHealth } from './-server'
+import { getQuickTunnels } from './-server'
 import type { QueryClient } from '@tanstack/react-query'
 
 export const queries = {
-  authHealth: {
-    key: ['auth', 'health'] as const,
+  tunnelStatus: {
+    key: ['tunnel', 'status'] as const,
     options() {
       return queryOptions({
         queryKey: this.key,
-        queryFn: checkAuthHealth,
+        queryFn: getQuickTunnels,
       })
     },
     useOptions() {
       return queryOptions({
         queryKey: this.key,
-        queryFn: useServerFn(checkAuthHealth),
+        queryFn: useServerFn(getQuickTunnels),
         refetchInterval: 5000,
       })
     },
@@ -24,3 +24,4 @@ export const queries = {
     },
   },
 }
+

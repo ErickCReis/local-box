@@ -6,12 +6,17 @@ import type { QueryClient } from '@tanstack/react-query'
 export const queries = {
   convexHealth: {
     key: ['convex', 'health'] as const,
-    options(initialData?: Awaited<ReturnType<typeof checkConvexHealth>>) {
+    options() {
+      return queryOptions({
+        queryKey: this.key,
+        queryFn: checkConvexHealth,
+      })
+    },
+    useOptions() {
       return queryOptions({
         queryKey: this.key,
         queryFn: useServerFn(checkConvexHealth),
         refetchInterval: 5000,
-        ...(initialData && { initialData }),
       })
     },
     invalidate(queryClient: QueryClient) {
@@ -21,6 +26,12 @@ export const queries = {
   convexAdminKey: {
     key: ['convex', 'admin-key'] as const,
     options() {
+      return queryOptions({
+        queryKey: this.key,
+        queryFn: checkConvexAdminKey,
+      })
+    },
+    useOptions() {
       return queryOptions({
         queryKey: this.key,
         queryFn: useServerFn(checkConvexAdminKey),

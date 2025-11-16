@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { createFileRoute } from '@tanstack/react-router'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { CheckCircle2, Circle, Loader2, XCircle } from 'lucide-react'
 import { getDockerStatus, watchDockerStatus } from './-server'
 import { queries } from './-queries'
@@ -9,7 +9,10 @@ import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/_host/setup/docker/')({
   component: DockerTab,
-  loader: async () => {
+  loader: async ({ context }) => {
+    await Promise.all([
+      context.queryClient.ensureQueryData(queries.dockerDaemon.options()),
+    ])
     return {
       dockerStatus: await getDockerStatus(),
     }
@@ -66,13 +69,13 @@ function DockerTab() {
   )
 
   // Check Docker daemon
-  const { data: daemonStatus, isLoading: daemonLoading } = useQuery(
-    queries.dockerDaemon.options(),
+  const { data: daemonStatus } = useSuspenseQuery(
+    queries.dockerDaemon.useOptions(),
   )
 
   // Check Docker images
-  const { data: imagesStatus, isLoading: imagesLoading } = useQuery(
-    queries.dockerImages.options(daemonStatus?.available === true),
+  const { data: imagesStatus } = useSuspenseQuery(
+    queries.dockerImages.useOptions(daemonStatus.available),
   )
 
   // Docker actions
@@ -97,19 +100,15 @@ function DockerTab() {
     return () => controller.abort()
   }, [])
 
-  const daemonStepStatus: StepStatus = daemonLoading
-    ? 'checking'
-    : daemonStatus?.available
-      ? 'success'
-      : 'error'
+  const daemonStepStatus: StepStatus = daemonStatus.available
+    ? 'success'
+    : 'error'
 
-  const imagesStepStatus: StepStatus = imagesLoading
-    ? 'checking'
-    : imagesStatus?.allPresent
-      ? 'success'
-      : daemonStatus?.available
-        ? 'error'
-        : 'pending'
+  const imagesStepStatus: StepStatus = imagesStatus.allPresent
+    ? 'success'
+    : daemonStatus.available
+      ? 'error'
+      : 'pending'
 
   const containersStepStatus: StepStatus =
     dockerStatusResult.length > 0 &&
@@ -139,7 +138,7 @@ function DockerTab() {
           message="Docker Daemon"
           error={
             daemonStepStatus === 'error'
-              ? daemonStatus?.error || 'Docker daemon is not accessible'
+              ? daemonStatus.error || 'Docker daemon is not accessible'
               : undefined
           }
         />
@@ -149,9 +148,9 @@ function DockerTab() {
           message="Docker Images"
           error={
             imagesStepStatus === 'error'
-              ? imagesStatus?.missingImages.length
+              ? imagesStatus.missingImages.length
                 ? `Missing images: ${imagesStatus.missingImages.join(', ')}`
-                : imagesStatus?.error || 'Failed to check images'
+                : imagesStatus.error || 'Failed to check images'
               : undefined
           }
         />
@@ -170,7 +169,7 @@ function DockerTab() {
       <div className="flex gap-2">
         <Button
           onClick={() => dockerUpMutation.mutate({})}
-          disabled={isDockerUpPending || !daemonStatus?.available}
+          disabled={isDockerUpPending || !daemonStatus.available}
         >
           Start Docker
         </Button>

@@ -1,5 +1,4 @@
-import { useEffect, useState } from 'react'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
 import { useServerFn } from '@tanstack/react-start'
 import {
@@ -13,6 +12,7 @@ import {
 import { setupStatus } from './-server'
 import { mutations as dockerMutations } from './setup/docker/-mutations'
 import { mutations as tunnelMutations } from './setup/tunnel/-mutations'
+import { queries } from './-queries'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -24,47 +24,31 @@ import {
 } from '@/components/ui/dropdown-menu'
 
 export const Route = createFileRoute('/_host')({
-  loader: async () => setupStatus(),
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(queries.options())
+  },
   component: HostLayout,
 })
 
 function HostLayout() {
-  const context = Route.useLoaderData()
-  const [currentTunnelUrl, setCurrentTunnelUrl] = useState(
-    context.quickTunnel.tunnel,
-  )
-
   // Shared setup status query
-  const setupStatusFn = useServerFn(setupStatus)
-  const { data: setupStatusData } = useQuery({
-    queryKey: ['setup-status'],
-    queryFn: () => setupStatusFn(),
-    refetchInterval: 5000,
-    initialData: context,
-  })
-
-  useEffect(() => {
-    setCurrentTunnelUrl(setupStatusData.quickTunnel.tunnel)
-  }, [setupStatusData.quickTunnel.tunnel])
+  const { data: setupStatusData, refetch } = useSuspenseQuery(
+    queries.useOptions(),
+  )
 
   // Docker actions
   const dockerUpMutation = useMutation(dockerMutations.dockerUp.options())
-
   const dockerDownMutation = useMutation(dockerMutations.dockerDown.options())
 
   // Tunnel actions
   const startTunnelsMutation = useMutation({
     ...tunnelMutations.tunnelStart.options(),
-    onSuccess: (res) => {
-      setCurrentTunnelUrl(res.tunnel)
-    },
+    onSuccess: async () => await refetch(),
   })
 
   const stopTunnelsMutation = useMutation({
     ...tunnelMutations.tunnelStop.options(),
-    onSuccess: () => {
-      setCurrentTunnelUrl(null)
-    },
+    onSuccess: async () => await refetch(),
   })
 
   const isDockerUpPending = dockerMutations.dockerUp.useIsPending()
@@ -276,14 +260,16 @@ function HostLayout() {
                   <>
                     <DropdownMenuItem
                       onClick={() =>
-                        navigator.clipboard.writeText(currentTunnelUrl || '')
+                        navigator.clipboard.writeText(
+                          setupStatusData.quickTunnel.tunnel || '',
+                        )
                       }
                     >
                       <Copy className="h-4 w-4" />
                       Copy URL
                     </DropdownMenuItem>
                     <div className="px-2 py-1.5 bg-muted rounded text-xs font-mono break-all">
-                      {currentTunnelUrl}
+                      {setupStatusData.quickTunnel.tunnel}
                     </div>
                   </>
                 )}

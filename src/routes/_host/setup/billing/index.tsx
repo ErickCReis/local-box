@@ -1,5 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import { toast } from 'sonner'
 import {
@@ -18,7 +22,6 @@ import {
 } from 'autumn-js/react'
 import { queries } from './-queries'
 import { mutations } from './-mutations'
-import { getBillingConfig } from './-server'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
@@ -29,7 +32,9 @@ const FIXED_PRODUCT_ID = 'local-box'
 
 export const Route = createFileRoute('/_host/setup/billing/')({
   component: BillingTab,
-  loader: async () => await getBillingConfig(),
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(queries.billingConfig.options())
+  },
 })
 
 type StepStatus = 'pending' | 'checking' | 'success' | 'error'
@@ -136,13 +141,11 @@ function SubscriptionStatusSection() {
 
 function BillingTab() {
   const queryClient = useQueryClient()
-  const context = Route.useLoaderData()
   const { hostUrl } = useHostUrl()
   // Load billing config
-  const { data: billingConfigData } = useQuery({
-    ...queries.billingConfig.options(),
-    initialData: context,
-  })
+  const { data: billingConfigData } = useSuspenseQuery(
+    queries.billingConfig.useOptions(),
+  )
 
   // Update billing config mutation
   const updateConfigMutation = useMutation({
@@ -179,8 +182,7 @@ function BillingTab() {
 
   // Validation status
   const validation = billingConfigData.validation
-  const hasInvalidProductId =
-    billingConfigData.validation.hasInvalidProductId ?? false
+  const hasInvalidProductId = billingConfigData.validation.hasInvalidProductId
 
   const autumnSecretKeyStatus: StepStatus = validation.hasAutumnSecretKey
     ? 'success'
@@ -209,7 +211,7 @@ function BillingTab() {
           <AlertTitle>Product ID Mismatch</AlertTitle>
           <AlertDescription>
             The stored product ID (
-            {billingConfigData.config.fixedProductId ?? 'none'}) differs from
+            {billingConfigData.config.fixedProductId || 'none'}) differs from
             the required product ID ({FIXED_PRODUCT_ID}). The system will
             automatically use "{FIXED_PRODUCT_ID}" when billing is enabled.
           </AlertDescription>
@@ -305,8 +307,8 @@ function BillingTab() {
         </div>
 
         {isBillingEnabled &&
-          validation?.hasAutumnSecretKey &&
-          !validation?.hasInvalidProductId && (
+          validation.hasAutumnSecretKey &&
+          !validation.hasInvalidProductId && (
             <div className="border rounded-lg p-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div>

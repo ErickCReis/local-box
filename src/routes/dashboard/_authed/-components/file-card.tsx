@@ -48,7 +48,7 @@ export function FileCard({ file, tags }: Props) {
   const kb = Math.max(1, Math.round(file.size / 1024))
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState<Set<Id<'tags'>>>(new Set())
-  const isImage = file.contentType?.startsWith('image/')
+  const isImage = file.contentType.startsWith('image/')
   const thumbnailUrl = useQuery(
     api.files.getDownloadUrl,
     isImage ? { fileId: file._id } : 'skip',
@@ -159,7 +159,7 @@ export function FileCard({ file, tags }: Props) {
             </DropdownMenu>
           </div>
           <div className="text-xs text-muted-foreground">
-            {kb} KB • {file.contentType ?? '—'}
+            {kb} KB • {file.contentType || '—'}
           </div>
           <Tags open={open} onOpenChange={handleOpenChange}>
             <TagsTrigger
@@ -191,13 +191,13 @@ export function FileCard({ file, tags }: Props) {
                   {allTags
                     .filter((t) => {
                       // Hide system tags that are not currently on the file
-                      const isSystem = t.isSystem ?? false
+                      const isSystem = t.isSystem
                       const isActive = selected.has(t._id)
                       return !isSystem || isActive
                     })
                     .map((t) => {
                       const active = selected.has(t._id)
-                      const isSystem = t.isSystem ?? false
+                      const isSystem = t.isSystem
                       // System tags cannot be toggled manually (cannot add or remove)
                       const canToggle = !isSystem
                       return (

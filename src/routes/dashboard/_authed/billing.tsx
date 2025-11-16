@@ -1,11 +1,17 @@
-import { createFileRoute, Link } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useCustomer } from 'autumn-js/react'
-import { CreditCard, CheckCircle2, XCircle, Loader2 } from 'lucide-react'
+import { CheckCircle2, CreditCard, Loader2, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
-export const Route = createFileRoute('/dashboard/billing')({
+export const Route = createFileRoute('/dashboard/_authed/billing')({
   component: BillingPage,
 })
 
@@ -22,9 +28,9 @@ function BillingPage() {
     )
   }
 
-  const activeSubscriptions = customer.subscriptions?.filter(
-    (sub) => sub.status === 'active',
-  ) || []
+  const activeSubscriptions = customer.products.filter(
+    (product) => product.status === 'active',
+  )
 
   const handleManageBilling = async () => {
     try {
@@ -103,25 +109,25 @@ function BillingPage() {
             </Alert>
           ) : (
             <div className="space-y-4">
-              {activeSubscriptions.map((subscription) => (
+              {activeSubscriptions.map((product) => (
                 <div
-                  key={subscription.id}
+                  key={product.id}
                   className="border rounded-lg p-4 space-y-3"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <CheckCircle2 className="h-5 w-5 text-green-500" />
                       <div>
-                        <p className="font-medium">{subscription.productId}</p>
+                        <p className="font-medium">{product.id}</p>
                         <p className="text-sm text-muted-foreground">
-                          Status: {subscription.status}
+                          Status: {product.status}
                         </p>
                       </div>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleCancel(subscription.productId)}
+                      onClick={() => handleCancel(product.id)}
                     >
                       Cancel
                     </Button>
@@ -132,35 +138,6 @@ function BillingPage() {
           )}
         </CardContent>
       </Card>
-
-      {/* Features/Balances */}
-      {customer.features && Object.keys(customer.features).length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Feature Usage</CardTitle>
-            <CardDescription>Your current feature balances</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(customer.features).map(([featureId, feature]) => (
-                <div
-                  key={featureId}
-                  className="flex items-center justify-between p-3 border rounded-lg"
-                >
-                  <div>
-                    <p className="font-medium">{featureId}</p>
-                    {feature.balance !== undefined && (
-                      <p className="text-sm text-muted-foreground">
-                        Balance: {feature.balance}
-                      </p>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Invoices */}
       {customer.invoices && customer.invoices.length > 0 && (
@@ -173,12 +150,12 @@ function BillingPage() {
             <div className="space-y-2">
               {customer.invoices.map((invoice) => (
                 <div
-                  key={invoice.id}
+                  key={invoice.stripe_id}
                   className="flex items-center justify-between p-3 border rounded-lg"
                 >
                   <div>
                     <p className="font-medium">
-                      {new Date(invoice.createdAt * 1000).toLocaleDateString()}
+                      {new Date(invoice.created_at * 1000).toLocaleDateString()}
                     </p>
                     <p className="text-sm text-muted-foreground">
                       {invoice.status}
@@ -186,7 +163,7 @@ function BillingPage() {
                   </div>
                   <div className="text-right">
                     <p className="font-medium">
-                      ${(invoice.amount / 100).toFixed(2)}
+                      ${(invoice.total / 100).toFixed(2)}
                     </p>
                   </div>
                 </div>
@@ -208,4 +185,3 @@ function BillingPage() {
     </div>
   )
 }
-

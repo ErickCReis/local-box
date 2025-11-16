@@ -9,6 +9,12 @@ export const queries = {
     options() {
       return queryOptions({
         queryKey: this.key,
+        queryFn: checkDockerDaemon,
+      })
+    },
+    useOptions() {
+      return queryOptions({
+        queryKey: this.key,
         queryFn: useServerFn(checkDockerDaemon),
         refetchInterval: 5000,
       })
@@ -19,7 +25,13 @@ export const queries = {
   },
   dockerImages: {
     key: ['docker', 'images'] as const,
-    options(enabled = true) {
+    options() {
+      return queryOptions({
+        queryKey: this.key,
+        queryFn: checkDockerImages,
+      })
+    },
+    useOptions(enabled = true) {
       return queryOptions({
         queryKey: this.key,
         queryFn: useServerFn(checkDockerImages),

@@ -10,8 +10,6 @@ export const Route = createFileRoute('/dashboard')({
 function DashboardLayout() {
   const { hostUrl } = useHostUrl()
 
-  console.log('hostUrl', hostUrl)
-
   if (!hostUrl) {
     return <Navigate to="/enter-host" />
   }

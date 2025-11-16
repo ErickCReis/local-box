@@ -1,9 +1,13 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query'
 import { useForm } from '@tanstack/react-form'
 import { toast } from 'sonner'
 import { CheckCircle2, LogIn } from 'lucide-react'
-import { checkAuthHealth, createOwnerSchema } from './-server'
+import { createOwnerSchema } from './-server'
 import { queries } from './-queries'
 import { mutations } from './-mutations'
 import { Button } from '@/components/ui/button'
@@ -12,22 +16,18 @@ import { Label } from '@/components/ui/label'
 
 export const Route = createFileRoute('/_host/setup/auth/')({
   component: AuthTab,
-  loader: async () => {
-    return {
-      authHealth: await checkAuthHealth(),
-    }
+  loader: async ({ context }) => {
+    await context.queryClient.ensureQueryData(queries.authHealth.options())
   },
 })
 
 function AuthTab() {
-  const context = Route.useLoaderData()
   const queryClient = useQueryClient()
 
   // Health check queries with polling
-  const { data: authHealthData } = useQuery({
-    ...queries.authHealth.options(),
-    initialData: context.authHealth,
-  })
+  const { data: authHealthData } = useSuspenseQuery(
+    queries.authHealth.useOptions(),
+  )
 
   // User creation
   const createUserMutation = useMutation({

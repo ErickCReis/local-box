@@ -20,11 +20,10 @@ export const checkConvexHealth = createServerFn().handler(async () => {
   }
 })
 
-export const checkConvexAdminKey = createServerFn().handler(async () => {
+export const checkConvexAdminKey = createServerFn().handler(() => {
   const adminKey = process.env.CONVEX_SELF_HOSTED_ADMIN_KEY
   return {
     configured: !!adminKey,
     hasValue: adminKey ? adminKey.length > 0 : false,
   }
 })
-

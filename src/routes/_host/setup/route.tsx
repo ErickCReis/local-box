@@ -6,7 +6,7 @@ import {
   useSearch,
 } from '@tanstack/react-router'
 import { AlertCircle } from 'lucide-react'
-import { useEffect } from 'react'
+import { Suspense, useEffect } from 'react'
 import { toast } from 'sonner'
 import * as z from 'zod'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -103,7 +103,9 @@ function SetupLayout() {
         </TabsList>
 
         <div className="mt-6">
-          <Outlet />
+          <Suspense fallback={<div>Loading...</div>}>
+            <Outlet />
+          </Suspense>
         </div>
       </Tabs>
     </div>
