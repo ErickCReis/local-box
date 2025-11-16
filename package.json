@@ -7,7 +7,7 @@
     "dev:web": "NODE_OPTIONS='--import ./instrument.server.mjs' bun --bun vite dev",
     "dev:convex": "bun convex dev",
     "build:host": "BUILD_MODE=host bun --bun vite build && cp instrument.server.mjs .output/server/",
-    "build:client": "BUILD_MODE=client bun vite build && cp instrument.server.mjs .output/server/",
+    "build:client": "BUILD_MODE=client bun vite build",
     "start": "bun --import ./.output/server/instrument.server.mjs .output/server/index.mjs"
   },
   "dependencies": {
