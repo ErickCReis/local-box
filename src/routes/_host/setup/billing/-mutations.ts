@@ -5,7 +5,7 @@ import { updateBillingConfig } from './-server'
 export const mutations = {
   billingUpdateConfig: {
     key: ['billing', 'update-config'] as const,
-    options() {
+    useOptions() {
       return mutationOptions({
         mutationKey: this.key,
         mutationFn: useServerFn(updateBillingConfig),
@@ -20,4 +20,3 @@ export const mutations = {
     },
   },
 }
-

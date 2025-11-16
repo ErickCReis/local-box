@@ -2,6 +2,7 @@ import { Outlet, createFileRoute, redirect } from '@tanstack/react-router'
 import { setupStatus } from '../-server'
 import { useHostUrl } from '@/providers/host-url'
 import { HostConnectionProvider } from '@/providers/host-connection'
+import { AdminGuard } from '@/components/admin-guard'
 
 export const Route = createFileRoute('/_host/admin')({
   component: AdminLayout,
@@ -44,7 +45,9 @@ function AdminLayout() {
 
   return (
     <HostConnectionProvider hostUrl={hostUrl}>
-      <Outlet />
+      <AdminGuard>
+        <Outlet />
+      </AdminGuard>
     </HostConnectionProvider>
   )
 }

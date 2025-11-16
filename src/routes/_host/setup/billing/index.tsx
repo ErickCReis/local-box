@@ -149,7 +149,7 @@ function BillingTab() {
 
   // Update billing config mutation
   const updateConfigMutation = useMutation({
-    ...mutations.billingUpdateConfig.options(),
+    ...mutations.billingUpdateConfig.useOptions(),
     onSuccess: (result) => {
       if (result.success) {
         toast.success('Billing configuration updated')

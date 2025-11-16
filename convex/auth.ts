@@ -272,6 +272,73 @@ export const adminAction = customAction(
   }),
 )
 
+// Custom functions for owner access (owner only)
+export const ownerQuery = customQuery(
+  query,
+  customCtx(async (ctx) => {
+    const { user, member } = await getUserAndMember(ctx)
+    if (member.role !== 'owner') {
+      throw new Error('Owner access required')
+    }
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      member: {
+        _id: member._id,
+        userId: member.userId,
+        role: member.role,
+      },
+    }
+  }),
+)
+
+export const ownerMutation = customMutation(
+  mutation,
+  customCtx(async (ctx) => {
+    const { user, member } = await getUserAndMember(ctx)
+    if (member.role !== 'owner') {
+      throw new Error('Owner access required')
+    }
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      member: {
+        _id: member._id,
+        userId: member.userId,
+        role: member.role,
+      },
+    }
+  }),
+)
+
+export const ownerAction = customAction(
+  action,
+  customCtx(async (ctx) => {
+    const { user, member } = await getUserAndMemberAction(ctx)
+    if (member.role !== 'owner') {
+      throw new Error('Owner access required')
+    }
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      member: {
+        _id: member._id,
+        userId: member.userId,
+        role: member.role,
+      },
+    }
+  }),
+)
+
 export function createAuth(
   ctx: GenericCtx<DataModel>,
   { optionsOnly }: { optionsOnly?: boolean } = { optionsOnly: false },

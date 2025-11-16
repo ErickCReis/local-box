@@ -1,13 +1,13 @@
 import { v } from 'convex/values'
 import { autumn } from 'autumn-js/better-auth'
-import { action, mutation, query } from './_generated/server'
+import { ownerAction, ownerMutation, ownerQuery } from './auth'
 import type { Product } from 'autumn-js'
 
 // Fixed product ID for billing
 export const FIXED_PRODUCT_ID = 'local-box'
 
 // Get the current host billing configuration
-export const getBillingConfig = query({
+export const getBillingConfig = ownerQuery({
   args: {},
   handler: async (ctx) => {
     // Get the first (and only) billing config record
@@ -27,7 +27,7 @@ export const getBillingConfig = query({
 })
 
 // Update the host billing configuration
-export const updateBillingConfig = mutation({
+export const updateBillingConfig = ownerMutation({
   args: {
     billingEnabled: v.boolean(),
   },
@@ -52,7 +52,7 @@ export const updateBillingConfig = mutation({
 })
 
 // Validate billing setup: check AUTUMN_SECRET_KEY and product existence
-export const validateBillingSetup = action({
+export const validateBillingSetup = ownerAction({
   args: {},
   handler: async (ctx) => {
     const autumnSecretKey = process.env.AUTUMN_SECRET_KEY
