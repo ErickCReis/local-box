@@ -1,9 +1,11 @@
 import { createClient } from '@convex-dev/better-auth'
 import { convex } from '@convex-dev/better-auth/plugins'
 import { betterAuth } from 'better-auth'
+import { autumn } from 'autumn-js/better-auth'
 import { v } from 'convex/values'
 import { components, internal } from './_generated/api'
 import { mutation, query } from './_generated/server'
+import type { BetterAuthPlugin } from 'better-auth'
 import type { DataModel } from './_generated/dataModel'
 import type { AuthFunctions, GenericCtx } from '@convex-dev/better-auth'
 
@@ -92,6 +94,30 @@ export function createAuth(
 ) {
   const siteUrl = 'http://localhost:3000'
   const secret = process.env.BETTER_AUTH_SECRET!
+  const autumnSecretKey = process.env.AUTUMN_SECRET_KEY
+
+  const plugins: Array<BetterAuthPlugin> = [convex()]
+
+  // Add Autumn plugin if secret key is configured
+  if (autumnSecretKey) {
+    plugins.push(
+      autumn({
+        identify: async ({ session }) => {
+          // Each host instance is its own customer
+          // Use a fixed identifier for this host instance
+          // In a multi-tenant setup, you might use the host URL or a unique host ID
+          const hostId = process.env.HOST_ID || 'default-host'
+          return {
+            customerId: hostId,
+            customerData: {
+              name: `Host ${hostId}`,
+              email: (await session)?.user.email || 'host@local-box.com',
+            },
+          }
+        },
+      }),
+    )
+  }
 
   return betterAuth({
     logger: {
@@ -117,6 +143,6 @@ export function createAuth(
         partitioned: true,
       },
     },
-    plugins: [convex()],
+    plugins,
   })
 }

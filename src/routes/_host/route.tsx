@@ -29,8 +29,10 @@ export const Route = createFileRoute('/_host')({
 })
 
 function HostLayout() {
-  const loaderData = Route.useLoaderData()
-  const [currentTunnelUrl, setCurrentTunnelUrl] = useState(loaderData.tunnelUrl)
+  const context = Route.useLoaderData()
+  const [currentTunnelUrl, setCurrentTunnelUrl] = useState(
+    context.quickTunnel.tunnel,
+  )
 
   // Shared setup status query
   const setupStatusFn = useServerFn(setupStatus)
@@ -38,18 +40,12 @@ function HostLayout() {
     queryKey: ['setup-status'],
     queryFn: () => setupStatusFn(),
     refetchInterval: 5000,
-    initialData: loaderData,
+    initialData: context,
   })
 
-  const {
-    dockerRunning,
-    tunnelUrl,
-    tunnelRunning,
-    convexEnabled,
-    authEnabled,
-    completedCount,
-    totalCount,
-  } = setupStatusData
+  useEffect(() => {
+    setCurrentTunnelUrl(setupStatusData.quickTunnel.tunnel)
+  }, [setupStatusData.quickTunnel.tunnel])
 
   // Docker actions
   const dockerUpMutation = useMutation(dockerMutations.dockerUp.options())
@@ -71,15 +67,26 @@ function HostLayout() {
     },
   })
 
-  // Sync tunnel URL from query
-  useEffect(() => {
-    setCurrentTunnelUrl(tunnelUrl)
-  }, [tunnelUrl])
-
   const isDockerUpPending = dockerMutations.dockerUp.useIsPending()
   const isDockerDownPending = dockerMutations.dockerDown.useIsPending()
   const isTunnelStartPending = tunnelMutations.tunnelStart.useIsPending()
   const isTunnelStopPending = tunnelMutations.tunnelStop.useIsPending()
+
+  const dockerRunning = setupStatusData.dockerStatus.every(
+    (s) => s.State === 'running',
+  )
+  const tunnelRunning = !!setupStatusData.quickTunnel.tunnel
+  const convexEnabled = setupStatusData.convexHealth.healthy
+  const authEnabled = setupStatusData.authHealth.hasOwner
+
+  const completedArray = [
+    dockerRunning,
+    tunnelRunning,
+    convexEnabled,
+    authEnabled,
+  ]
+  const completedCount = completedArray.filter(Boolean).length
+  const totalCount = completedArray.length
 
   // Calculate overall status
   const allRunning =

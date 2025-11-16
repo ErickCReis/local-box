@@ -1,20 +1,23 @@
-import { Link, createFileRoute, useLoaderData } from '@tanstack/react-router'
+import { Link, createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { CheckCircle2, Circle } from 'lucide-react'
-import { queries as authQueries } from '../auth/-queries'
-import { queries as convexQueries } from '../convex/-queries'
+import { setupStatus } from '../-server'
+import { queries as authQueries } from './auth/-queries'
+import { queries as convexQueries } from './convex/-queries'
 import { Button } from '@/components/ui/button'
 
-export const Route = createFileRoute('/_host/setup/_overview/')({
+export const Route = createFileRoute('/_host/setup/')({
   component: OverviewTab,
+  loader: () => setupStatus(),
 })
 
 function OverviewTab() {
-  const context = useLoaderData({ from: '/_host/setup' })
+  const context = Route.useLoaderData()
 
   // Health check queries with polling for real-time updates
   const { data: convexHealthData } = useQuery({
-    ...convexQueries.convexHealth.options(context.convexHealth),
+    ...convexQueries.convexHealth.options(),
+    initialData: context.convexHealth,
   })
 
   const { data: authHealthData } = useQuery({
@@ -23,9 +26,11 @@ function OverviewTab() {
   })
 
   // Use unified status as base, but allow real-time updates from polling
-  const dockerRunning = context.unifiedStatus.dockerRunning
-  const tunnelRunning = context.unifiedStatus.tunnelRunning
-  const convexEnabled = convexHealthData?.healthy ?? false
+  const dockerRunning =
+    context.dockerStatus.length > 0 &&
+    context.dockerStatus.every((s) => s.State === 'running')
+  const tunnelRunning = !!context.quickTunnel.tunnel
+  const convexEnabled = convexHealthData.healthy
   const authEnabled = authHealthData.hasOwner
 
   const checklistItems = [

@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react'
-import { createFileRoute, useLoaderData } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { CheckCircle2, Circle, Loader2, XCircle } from 'lucide-react'
-import { watchDockerStatus } from './-server'
+import { getDockerStatus, watchDockerStatus } from './-server'
 import { queries } from './-queries'
 import { mutations } from './-mutations'
 import { Button } from '@/components/ui/button'
 
 export const Route = createFileRoute('/_host/setup/docker/')({
   component: DockerTab,
+  loader: async () => {
+    return {
+      dockerStatus: await getDockerStatus(),
+    }
+  },
 })
 
 type StepStatus = 'pending' | 'checking' | 'success' | 'error'
@@ -55,7 +60,7 @@ function StatusStep({
 }
 
 function DockerTab() {
-  const context = useLoaderData({ from: '/_host/setup' })
+  const context = Route.useLoaderData()
   const [dockerStatusResult, setDockerStatusResult] = useState(
     context.dockerStatus,
   )

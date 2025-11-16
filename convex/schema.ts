@@ -49,4 +49,9 @@ export default defineSchema({
     .index('by_tag', ['tagId'])
     .index('by_file_and_tag', ['fileId', 'tagId'])
     .index('by_tag_and_file', ['tagId', 'fileId']),
+  // Host billing configuration (global, single record)
+  hostBilling: defineTable({
+    billingEnabled: v.boolean(),
+    requiredProductId: v.optional(v.string()),
+  }),
 })

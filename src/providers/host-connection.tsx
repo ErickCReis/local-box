@@ -4,6 +4,8 @@ import { useQueryClient } from '@tanstack/react-query'
 import { convexClient } from '@convex-dev/better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
+import { AutumnProvider } from 'autumn-js/react'
+import { api } from '@convex/_generated/api'
 import type { AuthClient } from '@convex-dev/better-auth/react'
 import type { QueryClient } from '@tanstack/react-query'
 import type { PropsWithChildren } from 'react'
@@ -57,7 +59,9 @@ export function HostConnectionProvider({
         client={connection.convexQueryClient!.convexClient}
         authClient={connection.authClient!}
       >
-        {children}
+        <AutumnProvider betterAuthUrl={hostUrl || undefined}>
+          {children}
+        </AutumnProvider>
       </ConvexBetterAuthProvider>
     </HostConnectionContext.Provider>
   )

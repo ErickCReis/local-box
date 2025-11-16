@@ -1,6 +1,7 @@
 import { Navigate, Outlet, createFileRoute } from '@tanstack/react-router'
 import { useHostUrl } from '@/providers/host-url'
 import { HostConnectionProvider } from '@/providers/host-connection'
+import { BillingGuard } from '@/components/billing-guard'
 
 export const Route = createFileRoute('/dashboard')({
   component: DashboardLayout,
@@ -17,7 +18,9 @@ function DashboardLayout() {
 
   return (
     <HostConnectionProvider hostUrl={hostUrl}>
-      <Outlet />
+      <BillingGuard>
+        <Outlet />
+      </BillingGuard>
     </HostConnectionProvider>
   )
 }

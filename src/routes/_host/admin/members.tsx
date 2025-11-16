@@ -18,7 +18,7 @@ export const Route = createFileRoute('/_host/admin/members')({
 })
 
 function MembersPage() {
-  const { tunnelUrl } = useLoaderData({ from: '/_host/admin' })
+  const { quickTunnel } = useLoaderData({ from: '/_host/admin' })
 
   const members = useQuery(api.members.listMembers, {}) ?? []
 
@@ -37,7 +37,7 @@ function MembersPage() {
       ttlMinutes: 60,
     })
 
-    setInviteUrl(`${tunnelUrl}/dashboard?invite=${res.code}`)
+    setInviteUrl(`${quickTunnel.tunnel}/dashboard?invite=${res.code}`)
   }
 
   return (

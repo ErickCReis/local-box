@@ -1,18 +1,24 @@
 import { useState } from 'react'
-import { createFileRoute, useLoaderData } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
 import { useMutation } from '@tanstack/react-query'
 import { Info, X } from 'lucide-react'
 import { mutations } from './-mutations'
+import { getQuickTunnels } from './-server'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 
 export const Route = createFileRoute('/_host/setup/tunnel/')({
   component: TunnelTab,
+  loader: async () => {
+    return {
+      quickTunnel: await getQuickTunnels(),
+    }
+  },
 })
 
 function TunnelTab() {
-  const context = useLoaderData({ from: '/_host/setup' })
+  const context = Route.useLoaderData()
   const [publicUrl, setPublicUrl] = useState(context.quickTunnel.tunnel)
   const [dismissBanner, setDismissBanner] = useState(false)
 

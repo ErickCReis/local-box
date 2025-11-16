@@ -6,19 +6,9 @@ import { HostConnectionProvider } from '@/providers/host-connection'
 export const Route = createFileRoute('/_host/admin')({
   component: AdminLayout,
   loader: async () => {
-    const {
-      dockerRunning,
-      tunnelUrl,
-      tunnelRunning,
-      convexEnabled,
-      authEnabled,
-      completedCount,
-      totalCount,
-    } = await setupStatus()
+    const { dockerStatus, convexHealth, quickTunnel } = await setupStatus()
 
-    // Require Docker and Tunnel at minimum for admin access
-    // Convex and Auth are recommended but not strictly required
-    if (!dockerRunning) {
+    if (!dockerStatus.every((s) => s.State === 'running')) {
       throw redirect({
         to: '/setup',
         search: {
@@ -28,24 +18,18 @@ export const Route = createFileRoute('/_host/admin')({
       })
     }
 
-    // if (!tunnelRunning) {
-    //   throw redirect({
-    //     to: '/setup',
-    //     search: {
-    //       error:
-    //         'Tunnel is not running. Please start the tunnel to access admin features.',
-    //     },
-    //   })
-    // }
+    if (!convexHealth.healthy) {
+      throw redirect({
+        to: '/setup/convex',
+        search: {
+          error:
+            'Convex is not healthy. Please check the Convex container logs.',
+        },
+      })
+    }
 
     return {
-      tunnelUrl,
-      dockerRunning,
-      tunnelRunning,
-      convexEnabled,
-      authEnabled,
-      completedCount,
-      totalCount,
+      quickTunnel,
     }
   },
 })
