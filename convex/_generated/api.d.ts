@@ -2158,5 +2158,4 @@ export declare const components: {
       updateMany: FunctionReference<"mutation", "internal", any, any>;
     };
   };
-  autumn: {};
 };

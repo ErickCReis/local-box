@@ -12,8 +12,6 @@ interface BillingGuardProps {
 
 export function BillingGuard({ children }: BillingGuardProps) {
   const billingConfig = useStableQuery(api.billing.getBillingConfig)
-  const { customer, attach, check } = useCustomer()
-  const navigate = useNavigate()
 
   // If billing config is loading or not enabled, allow access
   if (billingConfig === undefined) {
@@ -24,28 +22,27 @@ export function BillingGuard({ children }: BillingGuardProps) {
     return <>{children}</>
   }
 
-  // If no required product ID, allow access
-  if (!billingConfig.requiredProductId) {
-    return <>{children}</>
-  }
+  return (
+    <BillingGuardEnabled fixedProductId={billingConfig.fixedProductId}>
+      {children}
+    </BillingGuardEnabled>
+  )
+}
 
+function BillingGuardEnabled({
+  children,
+  fixedProductId,
+}: React.PropsWithChildren<{ fixedProductId: string }>) {
+  const { customer, attach } = useCustomer()
+  const navigate = useNavigate()
   // Check subscription status - user must have an active subscription to the required product
   const hasActiveSubscription =
     customer &&
-    customer.invoices &&
-    customer.invoices.some(
-      (invoice) =>
-        billingConfig.requiredProductId &&
-        invoice.product_ids.includes(billingConfig.requiredProductId) &&
-        invoice.status === 'active',
+    customer.products.some(
+      (product) => product.id === fixedProductId && product.status === 'active',
     )
 
-  // Also check if allowed via feature check (if the product is set up as a feature)
-  const hasAccessViaFeature = check({
-    featureId: billingConfig.requiredProductId,
-  }).data.allowed
-
-  if (hasActiveSubscription || hasAccessViaFeature) {
+  if (hasActiveSubscription) {
     return <>{children}</>
   }
 
@@ -68,8 +65,8 @@ export function BillingGuard({ children }: BillingGuardProps) {
             <div>
               <h3 className="font-medium">Upgrade Required</h3>
               <p className="text-sm text-muted-foreground">
-                Subscribe to <strong>{billingConfig.requiredProductId}</strong>{' '}
-                to access this dashboard.
+                Subscribe to <strong>{fixedProductId}</strong> to access this
+                dashboard.
               </p>
             </div>
           </div>
@@ -79,7 +76,7 @@ export function BillingGuard({ children }: BillingGuardProps) {
             onClick={async () => {
               try {
                 await attach({
-                  productId: billingConfig.requiredProductId!,
+                  productId: fixedProductId,
                   dialog: PaywallDialog,
                 })
                 // After successful subscription, the component will re-render
@@ -89,7 +86,7 @@ export function BillingGuard({ children }: BillingGuardProps) {
               }
             }}
           >
-            Subscribe to {billingConfig.requiredProductId}
+            Subscribe to {fixedProductId}
           </Button>
 
           <Button

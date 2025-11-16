@@ -52,6 +52,5 @@ export default defineSchema({
   // Host billing configuration (global, single record)
   hostBilling: defineTable({
     billingEnabled: v.boolean(),
-    requiredProductId: v.optional(v.string()),
   }),
 })
