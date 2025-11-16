@@ -82,6 +82,24 @@ This project is built for the TanStack Start Hackathon. Learn more: `https://www
 - **Cloudflare**: Secure proxy to connect clients to hosts.
 - **Autumn**: Payments and access for paid features.
 
+## Configuration
+
+### Sentry Error Monitoring
+
+This project includes Sentry for error monitoring and performance tracking. To enable Sentry, set the following environment variables:
+
+**Required:**
+- `VITE_SENTRY_DSN` - Your Sentry DSN for client-side error tracking
+- `SENTRY_DSN` - Your Sentry DSN for server-side error tracking
+
+
+
+Example `.env.local`:
+```bash
+VITE_SENTRY_DSN=https://your-dsn@sentry.io/project-id
+SENTRY_DSN=https://your-dsn@sentry.io/project-id
+```
+
 ## Who is it for?
 Teams and small organizations that want a familiar file‑sharing experience without giving up control, privacy, or simplicity.
 
