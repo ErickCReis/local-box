@@ -1,6 +1,7 @@
 import { createFileRoute, useLoaderData } from '@tanstack/react-router'
 import { useMutation, useQuery } from 'convex/react'
 import { useState } from 'react'
+import { useForm } from '@tanstack/react-form'
 import { api } from '@/../convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { useHostUrl } from '@/providers/host-url'
 
 export const Route = createFileRoute('/_host/admin/members')({
   component: MembersPage,
@@ -19,6 +21,9 @@ export const Route = createFileRoute('/_host/admin/members')({
 
 function MembersPage() {
   const { quickTunnel } = useLoaderData({ from: '/_host/admin' })
+  const { hostUrl } = useHostUrl()
+
+  const inviteHost = quickTunnel.tunnel ?? hostUrl
 
   const members = useQuery(api.members.listMembers, {}) ?? []
 
@@ -27,18 +32,23 @@ function MembersPage() {
   const createInvite = useMutation(api.members.createInvite)
 
   const [inviteUrl, setInviteUrl] = useState<string | null>(null)
-  const [inviteRole, setInviteRole] = useState<'admin' | 'member'>('member')
-  const [inviteEmail, setInviteEmail] = useState('')
 
-  const handleInvite = async () => {
-    const res = await createInvite({
-      role: inviteRole,
-      email: inviteEmail || undefined,
-      ttlMinutes: 60,
-    })
+  const inviteForm = useForm({
+    defaultValues: {
+      role: 'member' as 'admin' | 'member',
+      email: '',
+    },
+    onSubmit: async ({ value }) => {
+      const res = await createInvite({
+        role: value.role,
+        email: value.email || undefined,
+        ttlMinutes: 60,
+      })
 
-    setInviteUrl(`${quickTunnel.tunnel}/dashboard?invite=${res.code}`)
-  }
+      setInviteUrl(`${inviteHost}/dashboard?invite=${res.code}`)
+      inviteForm.reset()
+    },
+  })
 
   return (
     <main className="p-8 max-w-3xl mx-auto space-y-6">
@@ -46,34 +56,78 @@ function MembersPage() {
 
       <section className="space-y-3">
         <h2 className="text-xl font-medium">Invite</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-          <div className="space-y-2">
-            <Label>Role</Label>
-            <Select
-              value={inviteRole}
-              onValueChange={(v) => setInviteRole(v as any)}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select role" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="member">Member</SelectItem>
-                <SelectItem value="admin">Admin</SelectItem>
-              </SelectContent>
-            </Select>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            inviteForm.handleSubmit()
+          }}
+          className="space-y-3"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+            <div className="space-y-2">
+              <inviteForm.Field name="role">
+                {(field) => (
+                  <>
+                    <Label htmlFor={field.name}>Role</Label>
+                    <Select
+                      value={field.state.value}
+                      onValueChange={(v) => field.handleChange(v as any)}
+                    >
+                      <SelectTrigger id={field.name}>
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="member">Member</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {field.state.meta.errors.map((error, index) => (
+                      <p key={index} className="text-sm text-red-500">
+                        {String(error)}
+                      </p>
+                    ))}
+                  </>
+                )}
+              </inviteForm.Field>
+            </div>
+            <div className="space-y-2">
+              <inviteForm.Field name="email">
+                {(field) => (
+                  <>
+                    <Label htmlFor={field.name}>Email (optional)</Label>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="email"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                      placeholder="name@example.com"
+                    />
+                    {field.state.meta.errors.map((error, index) => (
+                      <p key={index} className="text-sm text-red-500">
+                        {String(error)}
+                      </p>
+                    ))}
+                  </>
+                )}
+              </inviteForm.Field>
+            </div>
+            <div>
+              <inviteForm.Subscribe>
+                {(state) => (
+                  <Button
+                    type="submit"
+                    disabled={!state.canSubmit || state.isSubmitting}
+                  >
+                    {state.isSubmitting ? 'Creating...' : 'Create Invite'}
+                  </Button>
+                )}
+              </inviteForm.Subscribe>
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label>Email (optional)</Label>
-            <Input
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              placeholder="name@example.com"
-            />
-          </div>
-          <div>
-            <Button onClick={handleInvite}>Create Invite</Button>
-          </div>
-        </div>
+        </form>
         {inviteUrl && (
           <div className="border rounded p-3 flex items-center justify-between">
             <div className="text-sm font-mono break-all">{inviteUrl}</div>

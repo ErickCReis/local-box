@@ -5,7 +5,7 @@ import { createOwnerUser } from './-server'
 export const mutations = {
   authCreateOwner: {
     key: ['auth', 'create-owner'] as const,
-    options() {
+    useOptions() {
       return mutationOptions({
         mutationKey: this.key,
         mutationFn: useServerFn(createOwnerUser),

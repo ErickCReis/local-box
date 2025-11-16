@@ -1,9 +1,15 @@
 import { Navigate, Outlet, createFileRoute } from '@tanstack/react-router'
+import { zodValidator } from '@tanstack/zod-adapter'
+import * as z from 'zod'
 import { useHostUrl } from '@/providers/host-url'
 import { HostConnectionProvider } from '@/providers/host-connection'
-import { BillingGuard } from '@/components/billing-guard'
 
 export const Route = createFileRoute('/dashboard')({
+  validateSearch: zodValidator(
+    z.object({
+      invite: z.string().optional(),
+    }),
+  ),
   component: DashboardLayout,
 })
 
@@ -16,9 +22,7 @@ function DashboardLayout() {
 
   return (
     <HostConnectionProvider hostUrl={hostUrl}>
-      <BillingGuard>
-        <Outlet />
-      </BillingGuard>
+      <Outlet />
     </HostConnectionProvider>
   )
 }

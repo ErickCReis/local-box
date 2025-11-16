@@ -5,7 +5,6 @@ import { convexClient } from '@convex-dev/better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
 import { AutumnProvider } from 'autumn-js/react'
-import { api } from '@convex/_generated/api'
 import type { AuthClient } from '@convex-dev/better-auth/react'
 import type { QueryClient } from '@tanstack/react-query'
 import type { PropsWithChildren } from 'react'
@@ -36,21 +35,23 @@ export function HostConnectionProvider({
     state: 'loading',
   })
   useEffect(() => {
-    setConnection((prev) => {
-      return updateClientStore({
-        hostUrl,
-        queryClient,
-        convexQueryClient: prev.convexQueryClient,
-      })
+    const prev = connection
+    const newConnection = updateClientStore({
+      hostUrl,
+      queryClient,
+      prev,
     })
+    setTimeout(() => {
+      setConnection(newConnection)
+    }, 500)
   }, [hostUrl, queryClient])
 
   if (connection.state === 'loading') {
-    return <div>Loading...</div>
+    return <div>[HostConnectionProvider] Loading...</div>
   }
 
   if (connection.state === 'disconnected') {
-    return <div>Disconnected</div>
+    return <div>[HostConnectionProvider] Disconnected</div>
   }
 
   return (
@@ -59,7 +60,7 @@ export function HostConnectionProvider({
         client={connection.convexQueryClient!.convexClient}
         authClient={connection.authClient!}
       >
-        <AutumnProvider betterAuthUrl={hostUrl || undefined}>
+        <AutumnProvider betterAuthUrl={hostUrl || undefined} includeCredentials>
           {children}
         </AutumnProvider>
       </ConvexBetterAuthProvider>
@@ -82,20 +83,18 @@ export function useHostConnected() {
 function updateClientStore({
   hostUrl,
   queryClient,
-  convexQueryClient,
+  prev: { convexQueryClient, authClient },
 }: {
   hostUrl: string | null
   queryClient: QueryClient
-  convexQueryClient?: ConvexQueryClient
+  prev: HostConnectionContextType
 }) {
-  try {
-    convexQueryClient?.convexClient.clearAuth()
-    convexQueryClient?.convexClient.close()
-  } catch (error) {
-    console.error('Error clearing host connection', error)
+  if (
+    convexQueryClient &&
+    convexQueryClient.convexClient.url === `${hostUrl}/convex-host`
+  ) {
+    return { state: 'connected' as const, convexQueryClient, authClient }
   }
-
-  queryClient.clear()
 
   if (!hostUrl) {
     return { state: 'disconnected' as const }
@@ -106,7 +105,7 @@ function updateClientStore({
     queryClient,
   )
 
-  const authClient = createAuthClient({
+  const newAuthClient = createAuthClient({
     baseURL: hostUrl,
     fetchOptions: {
       credentials: 'include',
@@ -117,7 +116,7 @@ function updateClientStore({
   return {
     state: 'connected' as const,
     convexQueryClient: newConvexQueryClient,
-    authClient,
+    authClient: newAuthClient,
   }
 }
 
@@ -127,11 +126,12 @@ function createClientStore(convexUrl: string, queryClient: QueryClient) {
     expectAuth: true,
   })
 
-  queryClient.defaultQueryOptions({
-    queryKey: [],
-    queryKeyHashFn: convexQueryClient.hashFn(),
-    queryFn: convexQueryClient.queryFn(),
-    gcTime: 5000,
+  queryClient.setDefaultOptions({
+    queries: {
+      queryKeyHashFn: convexQueryClient.hashFn(),
+      queryFn: convexQueryClient.queryFn(),
+      gcTime: 5000,
+    },
   })
 
   convexQueryClient.connect(queryClient)

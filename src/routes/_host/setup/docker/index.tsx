@@ -79,9 +79,9 @@ function DockerTab() {
   )
 
   // Docker actions
-  const dockerUpMutation = useMutation(mutations.dockerUp.options())
+  const dockerUpMutation = useMutation(mutations.dockerUp.useOptions())
 
-  const dockerDownMutation = useMutation(mutations.dockerDown.options())
+  const dockerDownMutation = useMutation(mutations.dockerDown.useOptions())
 
   useEffect(() => {
     const controller = new AbortController()

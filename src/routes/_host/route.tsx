@@ -1,6 +1,5 @@
-import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query'
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query'
 import { Link, Outlet, createFileRoute } from '@tanstack/react-router'
-import { useServerFn } from '@tanstack/react-start'
 import {
   ChevronDown,
   Copy,
@@ -9,7 +8,6 @@ import {
   Play,
   Square,
 } from 'lucide-react'
-import { setupStatus } from './-server'
 import { mutations as dockerMutations } from './setup/docker/-mutations'
 import { mutations as tunnelMutations } from './setup/tunnel/-mutations'
 import { queries } from './-queries'
@@ -37,17 +35,19 @@ function HostLayout() {
   )
 
   // Docker actions
-  const dockerUpMutation = useMutation(dockerMutations.dockerUp.options())
-  const dockerDownMutation = useMutation(dockerMutations.dockerDown.options())
+  const dockerUpMutation = useMutation(dockerMutations.dockerUp.useOptions())
+  const dockerDownMutation = useMutation(
+    dockerMutations.dockerDown.useOptions(),
+  )
 
   // Tunnel actions
   const startTunnelsMutation = useMutation({
-    ...tunnelMutations.tunnelStart.options(),
+    ...tunnelMutations.tunnelStart.useOptions(),
     onSuccess: async () => await refetch(),
   })
 
   const stopTunnelsMutation = useMutation({
-    ...tunnelMutations.tunnelStop.options(),
+    ...tunnelMutations.tunnelStop.useOptions(),
     onSuccess: async () => await refetch(),
   })
 
@@ -56,9 +56,10 @@ function HostLayout() {
   const isTunnelStartPending = tunnelMutations.tunnelStart.useIsPending()
   const isTunnelStopPending = tunnelMutations.tunnelStop.useIsPending()
 
-  const dockerRunning = setupStatusData.dockerStatus.every(
-    (s) => s.State === 'running',
-  )
+  const dockerRunning =
+    setupStatusData.dockerStatus.length > 0 &&
+    setupStatusData.dockerStatus.every((s) => s.State === 'running')
+
   const tunnelRunning = !!setupStatusData.quickTunnel.tunnel
   const convexEnabled = setupStatusData.convexHealth.healthy
   const authEnabled = setupStatusData.authHealth.hasOwner

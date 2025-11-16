@@ -2,7 +2,8 @@ import { useNavigate } from '@tanstack/react-router'
 import { PaywallDialog, useCustomer } from 'autumn-js/react'
 import { api } from '@convex/_generated/api'
 import { CreditCard, Lock } from 'lucide-react'
-import { useStableQuery } from '@/hooks/use-stable-query'
+import { convexQuery } from '@convex-dev/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 
@@ -11,11 +12,13 @@ interface BillingGuardProps {
 }
 
 export function BillingGuard({ children }: BillingGuardProps) {
-  const billingConfig = useStableQuery(api.billing.getBillingConfig)
+  const { data: billingConfig } = useQuery(
+    convexQuery(api.billing.getBillingConfig, {}),
+  )
 
   // If billing config is loading or not enabled, allow access
   if (billingConfig === undefined) {
-    return <div>Loading...</div>
+    return <div>[BillingGuard] Loading...</div>
   }
 
   if (!billingConfig.billingEnabled) {
@@ -34,6 +37,7 @@ function BillingGuardEnabled({
   fixedProductId,
 }: React.PropsWithChildren<{ fixedProductId: string }>) {
   const { customer, attach } = useCustomer()
+
   const navigate = useNavigate()
   // Check subscription status - user must have an active subscription to the required product
   const hasActiveSubscription =

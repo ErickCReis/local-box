@@ -6,9 +6,12 @@ import {
 } from '@tanstack/react-router'
 import { ThemeProvider } from '@tanstack-themes/react'
 import { Toaster } from 'sonner'
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools'
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
+import { TanStackDevtools } from '@tanstack/react-devtools'
+import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools'
 import type { QueryClient } from '@tanstack/react-query'
 import appCss from '@/styles/app.css?url'
+
 import { HostUrlProvider } from '@/providers/host-url'
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
@@ -49,6 +52,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         { rel: 'icon', href: '/favicon.ico' },
       ],
     }),
+    wrapInSuspense: true,
     notFoundComponent: () => <div>Route not found</div>,
     component: RootComponent,
   },
@@ -67,7 +71,20 @@ function RootComponent() {
         </HostUrlProvider>
         <Scripts />
         <Toaster />
-        <TanStackRouterDevtools />
+        <TanStackDevtools
+          plugins={[
+            {
+              name: 'TanStack Query',
+              render: <ReactQueryDevtoolsPanel />,
+              defaultOpen: true,
+            },
+            {
+              name: 'TanStack Router',
+              render: <TanStackRouterDevtoolsPanel />,
+              defaultOpen: false,
+            },
+          ]}
+        />
       </body>
     </html>
   )

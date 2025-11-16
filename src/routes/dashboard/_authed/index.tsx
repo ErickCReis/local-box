@@ -1,7 +1,14 @@
-import { createFileRoute, stripSearchParams } from '@tanstack/react-router'
-import { useRef } from 'react'
+import {
+  createFileRoute,
+  stripSearchParams,
+  useNavigate,
+} from '@tanstack/react-router'
+import { useEffect, useRef, useState } from 'react'
 import { zodValidator } from '@tanstack/zod-adapter'
+import { useMutation } from 'convex/react'
+import { toast } from 'sonner'
 import * as z from 'zod'
+import { api } from '@convex/_generated/api'
 import { FileGrid } from './-components/file-grid'
 import { TagFilterBar } from './-components/tag-filter-bar'
 import { Toolbar } from './-components/toolbar'
@@ -36,6 +43,7 @@ export const Route = createFileRoute('/dashboard/_authed/')({
         .array(z.string())
         .default([])
         .transform((val) => val.map((v) => v as Id<'files'>)),
+      invite: z.string().optional(),
     }),
   ),
   search: {
@@ -62,6 +70,42 @@ function RouteComponentContent() {
   const pageRef = useRef<HTMLElement | null>(null)
   const { filesStatus, loadMoreFiles } = useFiles()
   const { uploader, uploadsOpen, setUploadsOpen, addFiles } = useUpload()
+  const { invite } = Route.useSearch()
+  const navigate = useNavigate()
+  const acceptInvite = useMutation(api.members.acceptInvite)
+  const [inviteProcessed, setInviteProcessed] = useState(false)
+
+  // Handle invite acceptance for already-authenticated users
+  useEffect(() => {
+    if (invite && !inviteProcessed) {
+      setInviteProcessed(true)
+      acceptInvite({ code: invite })
+        .then(() => {
+          toast.success('Invite accepted successfully')
+          // Remove invite param from URL
+          navigate({
+            to: '/dashboard',
+            search: (prev) => {
+              const { invite: _, ...rest } = prev
+              return rest
+            },
+          })
+        })
+        .catch((error) => {
+          toast.error(
+            error instanceof Error ? error.message : 'Failed to accept invite',
+          )
+          // Remove invite param from URL even on error to avoid retrying
+          navigate({
+            to: '/dashboard',
+            search: (prev) => {
+              const { invite: _, ...rest } = prev
+              return rest
+            },
+          })
+        })
+    }
+  }, [invite, inviteProcessed, acceptInvite, navigate])
 
   return (
     <main ref={pageRef} className="p-6 sm:p-8 space-y-6">

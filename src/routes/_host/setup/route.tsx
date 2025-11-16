@@ -103,7 +103,7 @@ function SetupLayout() {
         </TabsList>
 
         <div className="mt-6">
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<div>[SetupLayout] Loading...</div>}>
             <Outlet />
           </Suspense>
         </div>

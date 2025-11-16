@@ -31,7 +31,7 @@ function AuthTab() {
 
   // User creation
   const createUserMutation = useMutation({
-    ...mutations.authCreateOwner.options(),
+    ...mutations.authCreateOwner.useOptions(),
     onSuccess: () => {
       toast.success('Owner user created successfully')
       queries.authHealth.invalidate(queryClient)

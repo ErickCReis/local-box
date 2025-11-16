@@ -34,7 +34,7 @@ function TunnelTab() {
 
   // Tunnel actions
   const startTunnelsMutation = useMutation({
-    ...mutations.tunnelStart.options(),
+    ...mutations.tunnelStart.useOptions(),
     onSuccess: (res) => {
       setPublicUrl(res.tunnel)
       queries.tunnelStatus.invalidate(queryClient)
@@ -42,7 +42,7 @@ function TunnelTab() {
   })
 
   const stopTunnelsMutation = useMutation({
-    ...mutations.tunnelStop.options(),
+    ...mutations.tunnelStop.useOptions(),
     onSuccess: () => {
       setPublicUrl(null)
       queries.tunnelStatus.invalidate(queryClient)

@@ -1,7 +1,10 @@
 import { useForm } from '@tanstack/react-form'
 import { Link, createFileRoute, useNavigate } from '@tanstack/react-router'
+import { zodValidator } from '@tanstack/zod-adapter'
+import { useMutation } from 'convex/react'
 import { toast } from 'sonner'
 import * as z from 'zod'
+import { api } from '@convex/_generated/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -9,6 +12,11 @@ import { useHostUrl } from '@/providers/host-url'
 import { useHostConnected } from '@/providers/host-connection'
 
 export const Route = createFileRoute('/dashboard/sign-in')({
+  validateSearch: zodValidator(
+    z.object({
+      invite: z.string().optional(),
+    }),
+  ),
   component: RouteComponent,
 })
 
@@ -16,6 +24,8 @@ function RouteComponent() {
   const { hostUrl } = useHostUrl()
   const { authClient } = useHostConnected()
   const navigate = useNavigate()
+  const { invite } = Route.useSearch()
+  const acceptInvite = useMutation(api.members.acceptInvite)
 
   const form = useForm({
     defaultValues: {
@@ -23,19 +33,35 @@ function RouteComponent() {
       password: '12345678',
     },
     onSubmit: async ({ value }) => {
-      await authClient.signIn.email({
-        email: value.email,
-        password: value.password,
-        fetchOptions: {
-          onSuccess: () => {
-            navigate({ to: '/dashboard' })
-            toast.success('Sign in successful')
+      await authClient.signIn
+        .email({
+          email: value.email,
+          password: value.password,
+          fetchOptions: {
+            onSuccess: async () => {
+              // Accept invite if present
+              if (invite) {
+                try {
+                  await acceptInvite({ code: invite })
+                  toast.success('Invite accepted successfully')
+                } catch (error) {
+                  toast.error(
+                    error instanceof Error
+                      ? error.message
+                      : 'Failed to accept invite',
+                  )
+                }
+              }
+              toast.success('Sign in successful')
+            },
+            onError: (error) => {
+              toast.error(error.error.message || error.error.statusText)
+            },
           },
-          onError: (error) => {
-            toast.error(error.error.message || error.error.statusText)
-          },
-        },
-      })
+        })
+        .then(() => {
+          navigate({ to: '/dashboard', search: {} })
+        })
     },
     validators: {
       onSubmit: z.object({

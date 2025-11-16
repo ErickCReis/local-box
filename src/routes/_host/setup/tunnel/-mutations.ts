@@ -5,7 +5,7 @@ import { startQuickTunnels, stopQuickTunnels } from './-server'
 export const mutations = {
   tunnelStart: {
     key: ['tunnel', 'start'] as const,
-    options() {
+    useOptions() {
       return mutationOptions({
         mutationKey: this.key,
         mutationFn: useServerFn(startQuickTunnels),
@@ -21,7 +21,7 @@ export const mutations = {
   },
   tunnelStop: {
     key: ['tunnel', 'stop'] as const,
-    options() {
+    useOptions() {
       return mutationOptions({
         mutationKey: this.key,
         mutationFn: useServerFn(stopQuickTunnels),

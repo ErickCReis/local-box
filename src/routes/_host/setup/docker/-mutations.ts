@@ -5,10 +5,11 @@ import { dockerDown, dockerUp } from './-server'
 export const mutations = {
   dockerUp: {
     key: ['docker', 'up'] as const,
-    options() {
+    useOptions() {
+      const mutationFn = useServerFn(dockerUp)
       return mutationOptions({
         mutationKey: this.key,
-        mutationFn: useServerFn(dockerUp),
+        mutationFn,
       })
     },
     useIsPending() {
@@ -21,10 +22,11 @@ export const mutations = {
   },
   dockerDown: {
     key: ['docker', 'down'] as const,
-    options() {
+    useOptions() {
+      const mutationFn = useServerFn(dockerDown)
       return mutationOptions({
         mutationKey: this.key,
-        mutationFn: useServerFn(dockerDown),
+        mutationFn,
       })
     },
     useIsPending() {

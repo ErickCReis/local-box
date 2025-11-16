@@ -3,6 +3,8 @@ import { defineConfig } from 'vite'
 import tsConfigPaths from 'vite-tsconfig-paths'
 import tailwindcss from '@tailwindcss/vite'
 import viteReact from '@vitejs/plugin-react'
+import { devtools } from '@tanstack/devtools-vite'
+
 import { nitro } from 'nitro/vite'
 
 export default defineConfig((ctx) => {
@@ -15,11 +17,16 @@ export default defineConfig((ctx) => {
       exclude: ['ssh2', 'cpu-features'],
     },
     plugins: [
+      devtools({ enhancedLogs: { enabled: false } }),
       tailwindcss(),
       tsConfigPaths(),
       tanstackStart({}),
-      viteReact(),
-      ctx.command === 'build' ? nitro({ preset: 'netlify' }) : null,
+      viteReact({
+        babel: {
+          plugins: ['babel-plugin-react-compiler'],
+        },
+      }),
+      ctx.command === 'build' ? nitro({ preset: 'bun' }) : null,
     ],
   }
 })
