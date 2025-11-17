@@ -1,107 +1,143 @@
 # Local Box
 
-Easy, distributed, self-hosted Google Drive.
+> **Easy, distributed, self-hosted Google Drive**
 
-## What is it?
-Local Box is a simple way for teams to share and organize files they fully control. It brings the ease of a cloud drive to your own machines, so your data stays private and close to you.
+[![TanStack Start Hackathon](https://img.shields.io/badge/TanStack%20Start-Hackathon-blue)](https://www.convex.dev/hackathons/tanstack)
 
-## How it works (at a glance)
-- Create a workspace and invite your teammates.
-- One machine acts as the host; others join through a secure link.
-- Add more hosts for redundancy and choose which folders sync where.
-- Access everything through a clean, lightweight web app.
+Local Box is a powerful file-sharing solution that brings the ease of cloud storage to your own infrastructure. Share files seamlessly between a host machine and web clients, with full control over your data and privacy.
 
-## Components
-- **Web UI/Dashboard (TanStack Start)**: The front-end app to create/join workspaces, browse files/folders, manage access, and trigger actions (uploads, moves, sharing). Connects to the backend for realtime updates.
-- **Host Server (Bun)**: A lightweight service running on your machine or a small server. It watches local folders, syncs file changes to the backend, serves file content to clients through the proxy, and enforces replication policies.
-- **Convex (self-hosted)**: Provides the realtime database, storage, and sync primitives. Stores file/folder metadata, ACLs, replication policies, and (optionally) file blobs.
-- **Proxy Layer (Cloudflare)**: Securely exposes a host to the internet behind a shareable URL, handling TLS, revocation, and routing to the host’s endpoints.
-- **Payments/Access (Autumn)**: Optional paid feature gating and entitlements for teams that need advanced capabilities.
+## ✨ Why Local Box?
 
-## Key flows
-1. **Workspace creation**
-   - User creates a workspace in the Web UI.
-   - Convex persists workspace, owner user, and default roles.
-   - A secure invite link is generated for teammates and/or hosts.
+- 🔒 **Your Data, Your Control** - Self-hosted infrastructure means your files never leave your machines
+- 🌐 **Dual Mode Architecture** - Run as a host on your machine or access via web client
+- ⚡ **Realtime Sync** - Live updates across all clients and hosts instantly
+- 🏷️ **Smart Organization** - Auto-tagging system organizes files by type, size, and owner
+- 💳 **Built-in Billing** - Subscription management and paywall guards for monetization
+- 🔐 **Secure Tunneling** - Cloudflare-powered secure connections between hosts and clients
 
-2. **Host onboarding**
-   - A machine runs the Host Server and uses the invite to register as a host.
-   - The Host establishes a tunnel via the Proxy Layer and advertises reachable endpoints.
-   - Admins assign replication policies to select which folders this host keeps locally.
+---
 
-3. **File sync**
-   - Clients upload files via the Web UI. Files are chunked, hashed, and stored via Convex storage or streamed to a reachable Host.
-   - Metadata is updated in Convex; subscribed clients and hosts receive realtime updates and reconcile.
-   - Hosts pull down content they’re responsible for according to replication policies; clients fetch content from the nearest available source (host or storage) via signed URLs.
+## 🚀 Key Features
 
-4. **Sharing and access control**
-   - Per-folder/file ACLs determine who can view, edit, or share.
-   - Share links can be created with scopes (read-only, time-limited, workspace-only) and revoked at any time.
+### Dual Mode Architecture
+**Host Mode**: Run Local Box on your machine with Docker. Your machine acts as the file server, watching local folders and syncing changes to the backend.
 
-5. **Redundancy and recovery**
-   - Multiple hosts can pin the same folders for redundancy.
-   - If a host goes offline, clients fall back to other hosts or (if configured) Convex storage copies.
+**Client Mode**: Access files through a beautiful web app deployed on Netlify. Clients connect to hosts via secure tunnels, enabling remote access without exposing your network.
 
-## Security model (draft)
-- **Identity**: Workspace-level auth; users authenticate to the Web UI and receive scoped tokens for API/file access.
-- **Transport**: All external traffic is HTTPS via the proxy. Internal host traffic is authenticated and signed.
-- **Access control**: ACLs enforced at the API layer; share links use signed, revocable tokens.
-- **At-rest**: Storage backends can be encrypted at rest. Optional client-side encryption can be added per workspace for sensitive data (future).
+### Secure Tunneling
+Cloudflare-powered tunnels create secure, shareable URLs that connect web clients to local hosts. No port forwarding or complex networking required—just start the tunnel and share the URL.
 
-## Replication policies (draft)
-- **Pinned**: Host maintains a full copy of selected folders/files.
-- **On-demand**: Host caches items recently accessed by its users and evicts with an LRU policy.
-- **Exclude**: Host ignores selected folders entirely.
+### Auto-Tagging System
+Files are automatically tagged based on:
+- **File Type**: Extension-based tags (`.pdf`, `.jpg`, `.docx`, etc.)
+- **File Size**: Size range tags (Small, Medium, Large, Very Large)
+- **Owner**: User-based tags for tracking who uploaded what
 
-## Conflict resolution (draft)
-- **Metadata**: Realtime, last-writer-wins for simple fields; operations are ordered by server timestamps.
-- **Content**: New file versions are immutable; updates create a new version. Clients always fetch the latest version referenced by metadata.
+### Bulk Operations
+Manage multiple files at once:
+- Bulk tag assignment
+- Multi-file deletion
+- Batch operations for efficient content management
 
-## Capabilities (prototype scope)
-- Realtime workspace/file metadata
-- Folder/file CRUD, move/rename
-- Upload/download with resumable chunks
-- Share links with revocation
-- Basic replication and redundancy across hosts
+### Role-Based Access Control
+Admin panel for configuring:
+- User roles (admins, hosts, clients)
+- Permissions and access levels
+- Tag categories and auto-tagging rules
 
-## Non-goals (prototype)
-- End-to-end encrypted search/indexing
-- Full CRDT-based collaborative editing
-- Complex retention/legal hold
+### Billing Integration
+Complete subscription management:
+- Connect to Autumn for payment processing
+- Billing guards protect premium features
+- Seamless checkout flow integrated into the app
 
-## Links
-- Infra details: see `docs/infra.md`
-- Features and scope: see `docs/features.md`, `docs/modes.md`, `docs/roadmap.md`, `docs/mvp.md`
+### Realtime Sync
+Powered by Convex, all file metadata updates instantly across:
+- All connected clients
+- Host machines
+- Admin dashboards
 
-## Built for the TanStack Start Hackathon
-This project is built for the TanStack Start Hackathon. Learn more: `https://www.convex.dev/hackathons/tanstack`.
+---
 
-- **TanStack Start**: App framework for the web UI and server-side routes.
-- **Netlify**: Hosting the web-only client experience.
-- **Convex**: Realtime data sync and file storage.
-- **Cloudflare**: Secure proxy to connect clients to hosts.
-- **Autumn**: Payments and access for paid features.
+## 🏗️ Built with Hackathon Sponsors
 
-## Configuration
+This project showcases deep integration with the TanStack Start Hackathon sponsors:
 
-### Sentry Error Monitoring
+### 🎯 TanStack Start
+**Full-stack framework powering the entire web application**
 
-This project includes Sentry for error monitoring and performance tracking. To enable Sentry, set the following environment variables:
+- Server-side routes and SSR capabilities for optimal performance
+- Streaming support for real-time data updates
+- RPC-style server functions for secure backend operations
+- Integrated with TanStack Router for type-safe navigation
+- TanStack Query for efficient data fetching and caching
 
-**Required:**
-- `VITE_SENTRY_DSN` - Your Sentry DSN for client-side error tracking
-- `SENTRY_DSN` - Your Sentry DSN for server-side error tracking
+**Integration**: The entire web UI is built with TanStack Start, from authentication flows to file management dashboards. Server functions handle tunnel creation, file uploads, and billing operations.
 
+### ⚡ Convex (Self-Hosted)
+**Realtime database and file storage backend**
 
+- Self-hosted Convex instance running in Docker
+- Realtime subscriptions for live file metadata updates
+- File storage backend for uploaded content
+- Schema-driven data model with type safety
+- Automatic sync across all connected clients and hosts
 
-Example `.env.local`:
-```bash
-VITE_SENTRY_DSN=https://your-dsn@sentry.io/project-id
-SENTRY_DSN=https://your-dsn@sentry.io/project-id
-```
+**Integration**: All file metadata, tags, users, and billing configurations are stored in Convex. The self-hosted setup ensures complete data control while leveraging Convex's powerful realtime capabilities.
 
-## Who is it for?
-Teams and small organizations that want a familiar file‑sharing experience without giving up control, privacy, or simplicity.
+### ☁️ Cloudflare
+**Secure tunnel creation and proxy layer**
 
-## Status
-Hackathon prototype. We're organizing the idea and scope first; implementation details will follow.
+- `cloudflared` package for creating secure tunnels
+- Quick tunnel mode for instant host exposure
+- TLS termination and secure routing
+- No port forwarding or firewall configuration needed
+
+**Integration**: Host machines use Cloudflare tunnels to expose themselves securely to the internet. The tunnel URL is shared with clients, enabling web-to-local connections without exposing the host's network.
+
+### 🌐 Netlify
+**Client mode deployment and hosting**
+
+- Nitro preset configured for Netlify deployment
+- Static site generation for public pages
+- Serverless functions for API routes
+- Optimized builds for web-only client experience
+
+**Integration**: The client mode builds specifically for Netlify deployment, creating a web-only version that connects to remote hosts. Configured via `vite.config.ts` with Nitro preset.
+
+### 💰 Autumn
+**Billing and subscription management**
+
+- `autumn-js` package for subscription handling
+- Billing guards protecting premium features
+- Integration with Better Auth for customer identification
+- Pricing tables and checkout flows
+- Subscription status tracking
+
+**Integration**: Autumn powers the entire billing system. Admins configure billing settings, and the `BillingGuard` component protects premium routes. Users can subscribe directly from the app with a seamless checkout experience.
+
+### 🐛 Sentry
+**Error monitoring and performance tracking**
+
+- `@sentry/tanstackstart-react` for TanStack Start integration
+- Client-side error tracking with React Router integration
+- Server-side error capture via `instrument.server.mjs`
+- Performance monitoring for route navigation
+- Environment-aware error reporting
+
+**Integration**: Sentry is integrated at both the router level (for client errors) and server level (for API errors). TanStack Router browser tracing integration provides detailed performance metrics.
+
+---
+
+## 🏆 TanStack Start Hackathon Submission
+
+This project is built for the **[TanStack Start Hackathon](https://www.convex.dev/hackathons/tanstack)** hosted by Convex, CodeRabbit, Firecrawl, Netlify, Autumn, Sentry, and Cloudflare.
+
+### Sponsor Integration Summary
+
+- ✅ **TanStack Start**: Full-stack framework for web UI and server routes
+- ✅ **Convex**: Self-hosted realtime database and file storage
+- ✅ **Cloudflare**: Secure tunnel creation and proxy layer
+- ✅ **Netlify**: Client mode deployment and hosting
+- ✅ **Autumn**: Billing and subscription management
+- ✅ **Sentry**: Error monitoring and performance tracking
