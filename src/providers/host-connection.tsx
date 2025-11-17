@@ -8,6 +8,7 @@ import { AutumnProvider } from 'autumn-js/react'
 import type { AuthClient } from '@convex-dev/better-auth/react'
 import type { QueryClient } from '@tanstack/react-query'
 import type { PropsWithChildren } from 'react'
+import { MinimalLoading } from '@/components/minimal-loading'
 
 type HostConnectionContextType =
   | {
@@ -47,7 +48,7 @@ export function HostConnectionProvider({
   }, [hostUrl, queryClient])
 
   if (connection.state === 'loading') {
-    return <div>[HostConnectionProvider] Loading...</div>
+    return <MinimalLoading />
   }
 
   if (connection.state === 'disconnected') {

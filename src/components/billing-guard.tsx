@@ -5,6 +5,7 @@ import { CreditCard, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useStableQuery } from '@/hooks/use-stable-query'
+import { MinimalLoading } from '@/components/minimal-loading'
 
 interface BillingGuardProps {
   children: React.ReactNode
@@ -15,7 +16,7 @@ export function BillingGuard({ children }: BillingGuardProps) {
 
   // If billing config is loading or not enabled, allow access
   if (billingConfig === undefined) {
-    return <div>[BillingGuard] Loading...</div>
+    return <MinimalLoading />
   }
 
   if (!billingConfig.billingEnabled) {
@@ -33,9 +34,14 @@ function BillingGuardEnabled({
   children,
   fixedProductId,
 }: React.PropsWithChildren<{ fixedProductId: string }>) {
-  const { customer, attach } = useCustomer()
+  const { customer, attach, isLoading } = useCustomer()
 
   const navigate = useNavigate()
+
+  if (isLoading) {
+    return <MinimalLoading />
+  }
+
   // Check subscription status - user must have an active subscription to the required product
   const hasActiveSubscription =
     customer &&

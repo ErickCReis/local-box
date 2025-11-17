@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 import * as z from 'zod'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { MinimalLoading } from '@/components/minimal-loading'
 
 export const Route = createFileRoute('/_host/setup')({
   validateSearch: z.object({
@@ -103,7 +104,7 @@ function SetupLayout() {
         </TabsList>
 
         <div className="mt-6">
-          <Suspense fallback={<div>[SetupLayout] Loading...</div>}>
+          <Suspense fallback={<MinimalLoading />}>
             <Outlet />
           </Suspense>
         </div>
