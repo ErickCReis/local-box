@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useHostConnected } from '@/providers/host-connection'
 import { useHostUrl } from '@/providers/host-url'
+import { SimpleHeader } from '@/components/simple-header'
 
 export const Route = createFileRoute('/dashboard/sign-up')({
   validateSearch: zodValidator(
@@ -74,7 +75,10 @@ function RouteComponent() {
   })
 
   return (
-    <div className="mx-auto w-full max-w-md p-6">
+    <div className="min-h-screen flex flex-col">
+      <SimpleHeader />
+      <div className="flex-1 flex items-center justify-center">
+        <div className="mx-auto w-full max-w-md p-6">
       <h1 className="mb-2 text-center text-3xl font-bold">Create Account</h1>
 
       <p className="mb-6 text-center text-sm text-muted-foreground">
@@ -185,6 +189,8 @@ function RouteComponent() {
         >
           <Link to="/dashboard/sign-in">Already have an account? Sign In</Link>
         </Button>
+      </div>
+        </div>
       </div>
     </div>
   )

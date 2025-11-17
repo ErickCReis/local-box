@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useHostUrl } from '@/providers/host-url'
 import { useHostConnected } from '@/providers/host-connection'
+import { SimpleHeader } from '@/components/simple-header'
 
 export const Route = createFileRoute('/dashboard/sign-in')({
   validateSearch: zodValidator(
@@ -72,90 +73,95 @@ function RouteComponent() {
   })
 
   return (
-    <div className="mx-auto w-full  max-w-md p-6">
-      <h1 className="mb-2 text-center text-3xl font-bold">Welcome Back</h1>
+    <div className="min-h-screen flex flex-col">
+      <SimpleHeader />
+      <div className="flex-1 flex items-center justify-center">
+        <div className="mx-auto w-full max-w-md p-6">
+          <h1 className="mb-2 text-center text-3xl font-bold">Welcome Back</h1>
 
-      <p className="mb-6 text-center text-sm text-muted-foreground">
-        Host: <span className="font-medium">{hostUrl}</span>
-        <Button variant="link" className="px-1" asChild>
-          <Link to="/enter-host">Change</Link>
-        </Button>
-      </p>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          form.handleSubmit()
-        }}
-        className="space-y-4"
-      >
-        <div>
-          <form.Field name="email">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Email</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="email"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </form.Field>
-        </div>
-
-        <div>
-          <form.Field name="password">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Password</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  type="password"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </form.Field>
-        </div>
-
-        <form.Subscribe>
-          {(state) => (
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={!state.canSubmit || state.isSubmitting}
-            >
-              {state.isSubmitting ? 'Submitting...' : 'Sign In'}
+          <p className="mb-6 text-center text-sm text-muted-foreground">
+            Host: <span className="font-medium">{hostUrl}</span>
+            <Button variant="link" className="px-1" asChild>
+              <Link to="/enter-host">Change</Link>
             </Button>
-          )}
-        </form.Subscribe>
-      </form>
+          </p>
 
-      <div className="mt-4 text-center">
-        <Button
-          variant="link"
-          className="text-indigo-600 hover:text-indigo-800"
-        >
-          <Link to="/dashboard/sign-up">Need an account? Sign Up</Link>
-        </Button>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              form.handleSubmit()
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <form.Field name="email">
+                {(field) => (
+                  <div className="space-y-2">
+                    <Label htmlFor={field.name}>Email</Label>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="email"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                    {field.state.meta.errors.map((error) => (
+                      <p key={error?.message} className="text-red-500">
+                        {error?.message}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </form.Field>
+            </div>
+
+            <div>
+              <form.Field name="password">
+                {(field) => (
+                  <div className="space-y-2">
+                    <Label htmlFor={field.name}>Password</Label>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      type="password"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                    {field.state.meta.errors.map((error) => (
+                      <p key={error?.message} className="text-red-500">
+                        {error?.message}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </form.Field>
+            </div>
+
+            <form.Subscribe>
+              {(state) => (
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={!state.canSubmit || state.isSubmitting}
+                >
+                  {state.isSubmitting ? 'Submitting...' : 'Sign In'}
+                </Button>
+              )}
+            </form.Subscribe>
+          </form>
+
+          <div className="mt-4 text-center">
+            <Button
+              variant="link"
+              className="text-indigo-600 hover:text-indigo-800"
+            >
+              <Link to="/dashboard/sign-up">Need an account? Sign Up</Link>
+            </Button>
+          </div>
+        </div>
       </div>
     </div>
   )

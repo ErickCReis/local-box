@@ -112,9 +112,6 @@ function RouteComponentContent() {
       <div className="flex items-center justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-2xl sm:text-3xl font-semibold truncate">Files</h1>
-          <p className="text-muted-foreground mt-1">
-            Upload, tag, and manage files. No folders — use tags.
-          </p>
         </div>
         <Toolbar />
       </div>

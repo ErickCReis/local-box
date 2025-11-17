@@ -1,6 +1,8 @@
-import { Link, createFileRoute } from '@tanstack/react-router'
+import { Link, Navigate, createFileRoute } from '@tanstack/react-router'
 import { useCustomer } from 'autumn-js/react'
 import { CheckCircle2, CreditCard, XCircle } from 'lucide-react'
+import { api } from '@convex/_generated/api'
+import { useStableQuery } from '@/hooks/use-stable-query'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -17,9 +19,19 @@ export const Route = createFileRoute('/dashboard/_authed/billing')({
 })
 
 function BillingPage() {
+  const billingConfig = useStableQuery(api.billing.getBillingConfig)
   const { customer, openBillingPortal, cancel, refetch } = useCustomer({
     expand: ['invoices'],
   })
+
+  if (billingConfig === undefined) {
+    return <MinimalLoading />
+  }
+
+  // If billing is not enabled, redirect to dashboard
+  if (!billingConfig.billingEnabled) {
+    return <Navigate to="/dashboard" />
+  }
 
   if (!customer) {
     return <MinimalLoading />

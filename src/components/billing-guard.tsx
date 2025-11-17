@@ -1,11 +1,12 @@
 import { useNavigate } from '@tanstack/react-router'
 import { useCustomer } from 'autumn-js/react'
 import { api } from '@convex/_generated/api'
-import { CreditCard, Lock } from 'lucide-react'
+import { CreditCard, Lock, LogOut } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { useStableQuery } from '@/hooks/use-stable-query'
 import { MinimalLoading } from '@/components/minimal-loading'
+import { useHostConnected } from '@/providers/host-connection'
 
 interface BillingGuardProps {
   children: React.ReactNode
@@ -35,7 +36,7 @@ function BillingGuardEnabled({
   fixedProductId,
 }: React.PropsWithChildren<{ fixedProductId: string }>) {
   const { customer, attach, isLoading } = useCustomer()
-
+  const { authClient } = useHostConnected()
   const navigate = useNavigate()
 
   if (isLoading) {
@@ -102,6 +103,22 @@ function BillingGuardEnabled({
             onClick={() => navigate({ to: '/setup/billing' })}
           >
             Manage Billing Settings
+          </Button>
+
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={async () => {
+              try {
+                await authClient.signOut()
+                navigate({ to: '/dashboard/sign-in' })
+              } catch (error) {
+                console.error('Failed to sign out:', error)
+              }
+            }}
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign Out
           </Button>
         </div>
       </div>

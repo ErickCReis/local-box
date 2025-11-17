@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useHostUrl } from '@/providers/host-url'
+import { SimpleHeader } from '@/components/simple-header'
 
 export const Route = createFileRoute('/enter-host')({
   component: RouteComponent,
@@ -48,63 +49,68 @@ function RouteComponent() {
   })
 
   return (
-    <div className="mx-auto w-full max-w-md p-6">
-      <h1 className="mb-2 text-center text-3xl font-bold">Enter Host</h1>
-      <p className="mb-6 text-center text-muted-foreground">
-        Provide the Host URL shared by your team to join the workspace.
-      </p>
-
-      <form
-        onSubmit={(e) => {
-          e.preventDefault()
-          e.stopPropagation()
-          form.handleSubmit()
-        }}
-        className="space-y-4"
-      >
-        <div>
-          <form.Field name="hostUrl">
-            {(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>Host URL</Label>
-                <Input
-                  id={field.name}
-                  name={field.name}
-                  placeholder="https://my-host.example.com"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => field.handleChange(e.target.value)}
-                />
-                {field.state.meta.errors.map((error) => (
-                  <p key={error?.message} className="text-red-500">
-                    {error?.message}
-                  </p>
-                ))}
-              </div>
-            )}
-          </form.Field>
-        </div>
-
-        {fetchHostMutation.error && (
-          <p className="text-red-500">
-            {fetchHostMutation.error instanceof Error
-              ? fetchHostMutation.error.message
-              : 'Failed to connect to host'}
+    <div className="min-h-screen flex flex-col">
+      <SimpleHeader />
+      <div className="flex-1 flex items-center justify-center">
+        <div className="mx-auto w-full max-w-md p-6">
+          <h1 className="mb-2 text-center text-3xl font-bold">Enter Host</h1>
+          <p className="mb-6 text-center text-muted-foreground">
+            Provide the Host URL shared by your team to join the workspace.
           </p>
-        )}
 
-        <form.Subscribe>
-          {(state) => (
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={!state.canSubmit || fetchHostMutation.isPending}
-            >
-              {fetchHostMutation.isPending ? 'Connecting…' : 'Continue'}
-            </Button>
-          )}
-        </form.Subscribe>
-      </form>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              form.handleSubmit()
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <form.Field name="hostUrl">
+                {(field) => (
+                  <div className="space-y-2">
+                    <Label htmlFor={field.name}>Host URL</Label>
+                    <Input
+                      id={field.name}
+                      name={field.name}
+                      placeholder="https://my-host.example.com"
+                      value={field.state.value}
+                      onBlur={field.handleBlur}
+                      onChange={(e) => field.handleChange(e.target.value)}
+                    />
+                    {field.state.meta.errors.map((error) => (
+                      <p key={error?.message} className="text-red-500">
+                        {error?.message}
+                      </p>
+                    ))}
+                  </div>
+                )}
+              </form.Field>
+            </div>
+
+            {fetchHostMutation.error && (
+              <p className="text-red-500">
+                {fetchHostMutation.error instanceof Error
+                  ? fetchHostMutation.error.message
+                  : 'Failed to connect to host'}
+              </p>
+            )}
+
+            <form.Subscribe>
+              {(state) => (
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={!state.canSubmit || fetchHostMutation.isPending}
+                >
+                  {fetchHostMutation.isPending ? 'Connecting…' : 'Continue'}
+                </Button>
+              )}
+            </form.Subscribe>
+          </form>
+        </div>
+      </div>
     </div>
   )
 }

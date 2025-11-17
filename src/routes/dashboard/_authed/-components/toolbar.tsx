@@ -1,14 +1,13 @@
 import { useState } from 'react'
-import { Loader2Icon, Tag, Trash2Icon, UploadIcon, X } from 'lucide-react'
-import { useNavigate } from '@tanstack/react-router'
+import { ListTreeIcon, Loader2Icon, Tag, Trash2Icon, X } from 'lucide-react'
 import { useMutation } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import { TagCreateDialog } from './tag-create-dialog'
 import { BulkTagDialog } from './bulk-tag-dialog'
 import { Button } from '@/components/ui/button'
-import { useHostConnected } from '@/providers/host-connection'
 import { useFileSelection } from '@/routes/dashboard/_authed/-providers/file-selection'
 import { useUpload } from '@/routes/dashboard/_authed/-providers/upload'
+import { UserMenu } from '@/components/user-menu'
 
 export function Toolbar() {
   const {
@@ -22,17 +21,9 @@ export function Toolbar() {
   const { hasActiveUploads, openUploads } = useUpload()
   const [newTagOpen, setNewTagOpen] = useState(false)
   const createTag = useMutation(api.tags.create)
-  const { authClient } = useHostConnected()
-  const navigate = useNavigate()
 
   const handleCreateTag = async (name: string, color?: string) => {
     await createTag({ name, color })
-  }
-
-  const handleSignOut = () => {
-    authClient.signOut().then(() => {
-      navigate({ to: '/dashboard/sign-in' })
-    })
   }
 
   return (
@@ -82,7 +73,7 @@ export function Toolbar() {
           {hasActiveUploads ? (
             <Loader2Icon className="animate-spin" />
           ) : (
-            <UploadIcon />
+            <ListTreeIcon />
           )}
           {hasActiveUploads && (
             <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500" />
@@ -102,9 +93,7 @@ export function Toolbar() {
         onOpenChange={setBulkTagDialogOpen}
         onConfirm={handleBulkAddTags}
       />
-      <Button variant="outline" onClick={handleSignOut}>
-        Sign out
-      </Button>
+      <UserMenu />
     </div>
   )
 }
