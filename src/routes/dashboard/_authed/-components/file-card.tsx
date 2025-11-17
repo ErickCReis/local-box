@@ -32,6 +32,7 @@ import {
   TagsValue,
 } from '@/components/kibo-ui/tags'
 import { useFileSelection } from '@/routes/dashboard/_authed/-providers/file-selection'
+import { Badge } from '@/components/ui/badge'
 
 type Tag = Doc<'tags'>
 
@@ -57,6 +58,8 @@ export function FileCard({ file, tags }: Props) {
   const setFileTags = useMutation(api.files.setTags)
   const deleteFile = useMutation(api.files.remove)
   const convex = useConvex()
+  const user = useQuery(api.auth.getCurrentUser, {})
+  const isViewer = user?.role === 'viewer'
 
   useEffect(() => {
     setSelected(new Set(tags.map((t) => t._id)))
@@ -114,12 +117,14 @@ export function FileCard({ file, tags }: Props) {
           isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
         )}
       >
-        <Checkbox
-          checked={isSelected}
-          onCheckedChange={handleCheckboxChange}
-          onClick={(e) => e.stopPropagation()}
-          aria-label={`Select ${file.filename}`}
-        />
+        {!isViewer && (
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={handleCheckboxChange}
+            onClick={(e) => e.stopPropagation()}
+            aria-label={`Select ${file.filename}`}
+          />
+        )}
       </div>
       <div className="flex items-start gap-3">
         <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/30">
@@ -151,90 +156,117 @@ export function FileCard({ file, tags }: Props) {
                   <DownloadIcon />
                   Download
                 </DropdownMenuItem>
-                <DropdownMenuItem variant="destructive" onClick={handleDelete}>
-                  <Trash2Icon />
-                  Delete
-                </DropdownMenuItem>
+                {!isViewer && (
+                  <DropdownMenuItem
+                    variant="destructive"
+                    onClick={handleDelete}
+                  >
+                    <Trash2Icon />
+                    Delete
+                  </DropdownMenuItem>
+                )}
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
           <div className="text-xs text-muted-foreground">
             {kb} KB • {file.contentType || '—'}
           </div>
-          <Tags open={open} onOpenChange={handleOpenChange}>
-            <TagsTrigger
-              className="h-8 p-1.5 rounded-sm border-muted-foreground/30 overflow-x-auto overflow-y-clip w-full"
-              variant="ghost"
-              hidePlaceholder
-            >
-              {tags.length === 0 && (
-                <div className="px-1 text-muted-foreground">
-                  <Tag size={14} />
+          {isViewer ? (
+            <div className="flex flex-wrap gap-1">
+              {tags.length === 0 ? (
+                <div className="px-1 text-muted-foreground text-xs">
+                  <Tag size={14} className="inline mr-1" />
+                  No tags
                 </div>
+              ) : (
+                tags.map((t) => (
+                  <Badge
+                    key={t._id}
+                    style={t.color ? { backgroundColor: t.color } : undefined}
+                  >
+                    {t.name}
+                  </Badge>
+                ))
               )}
-              {tags.map((t) => (
-                <TagsValue
-                  key={t._id}
-                  onRemove={t.isSystem ? undefined : () => remove(t._id)}
-                  className="px-1.5 py-0.5 text-[10px]"
-                  style={t.color ? { backgroundColor: t.color } : undefined}
-                >
-                  {t.name}
-                </TagsValue>
-              ))}
-            </TagsTrigger>
-            <TagsContent>
-              <TagsInput className="h-7 text-xs border-0 shadow-none ring-0 focus:ring-0 focus-visible:ring-0" />
-              <TagsList>
-                <TagsEmpty>No tags found.</TagsEmpty>
-                <TagsGroup>
-                  {allTags
-                    .filter((t) => {
-                      // Hide system tags that are not currently on the file
-                      const isSystem = t.isSystem
-                      const isActive = selected.has(t._id)
-                      return !isSystem || isActive
-                    })
-                    .map((t) => {
-                      const active = selected.has(t._id)
-                      const isSystem = t.isSystem
-                      // System tags cannot be toggled manually (cannot add or remove)
-                      const canToggle = !isSystem
-                      return (
-                        <TagsItem
-                          key={t._id}
-                          value={t.name}
-                          onSelect={canToggle ? () => toggle(t._id) : undefined}
-                          className={
-                            !canToggle
-                              ? 'cursor-not-allowed opacity-75'
-                              : undefined
-                          }
-                        >
-                          <div className="flex items-center gap-2">
-                            <span
-                              className="h-2.5 w-2.5 rounded-full border"
-                              style={
-                                t.color
-                                  ? {
-                                      backgroundColor: t.color,
-                                      borderColor: t.color,
-                                    }
-                                  : undefined
-                              }
+            </div>
+          ) : (
+            <Tags open={open} onOpenChange={handleOpenChange}>
+              <TagsTrigger
+                className="h-8 p-1.5 rounded-sm border-muted-foreground/30 overflow-x-auto overflow-y-clip w-full"
+                variant="ghost"
+                hidePlaceholder
+              >
+                {tags.length === 0 && (
+                  <div className="px-1 text-muted-foreground">
+                    <Tag size={14} />
+                  </div>
+                )}
+                {tags.map((t) => (
+                  <TagsValue
+                    key={t._id}
+                    onRemove={t.isSystem ? undefined : () => remove(t._id)}
+                    className="px-1.5 py-0.5 text-[10px]"
+                    style={t.color ? { backgroundColor: t.color } : undefined}
+                  >
+                    {t.name}
+                  </TagsValue>
+                ))}
+              </TagsTrigger>
+              <TagsContent>
+                <TagsInput className="h-7 text-xs border-0 shadow-none ring-0 focus:ring-0 focus-visible:ring-0" />
+                <TagsList>
+                  <TagsEmpty>No tags found.</TagsEmpty>
+                  <TagsGroup>
+                    {allTags
+                      .filter((t) => {
+                        // Hide system tags that are not currently on the file
+                        const isSystem = t.isSystem
+                        const isActive = selected.has(t._id)
+                        return !isSystem || isActive
+                      })
+                      .map((t) => {
+                        const active = selected.has(t._id)
+                        const isSystem = t.isSystem
+                        // System tags cannot be toggled manually (cannot add or remove)
+                        const canToggle = !isSystem
+                        return (
+                          <TagsItem
+                            key={t._id}
+                            value={t.name}
+                            onSelect={
+                              canToggle ? () => toggle(t._id) : undefined
+                            }
+                            className={
+                              !canToggle
+                                ? 'cursor-not-allowed opacity-75'
+                                : undefined
+                            }
+                          >
+                            <div className="flex items-center gap-2">
+                              <span
+                                className="h-2.5 w-2.5 rounded-full border"
+                                style={
+                                  t.color
+                                    ? {
+                                        backgroundColor: t.color,
+                                        borderColor: t.color,
+                                      }
+                                    : undefined
+                                }
+                              />
+                              <span>{t.name}</span>
+                            </div>
+                            <Check
+                              className={active ? 'opacity-100' : 'opacity-0'}
                             />
-                            <span>{t.name}</span>
-                          </div>
-                          <Check
-                            className={active ? 'opacity-100' : 'opacity-0'}
-                          />
-                        </TagsItem>
-                      )
-                    })}
-                </TagsGroup>
-              </TagsList>
-            </TagsContent>
-          </Tags>
+                          </TagsItem>
+                        )
+                      })}
+                  </TagsGroup>
+                </TagsList>
+              </TagsContent>
+            </Tags>
+          )}
         </div>
       </div>
     </Card>

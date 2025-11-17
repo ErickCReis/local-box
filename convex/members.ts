@@ -30,7 +30,7 @@ export const listAllUsers = adminQuery({
         _id: user.id as string,
         name: (user.name as string) || '',
         email: (user.email as string) || '',
-        role: memberRole ? (memberRole as 'owner' | 'admin' | 'member') : null,
+        role: memberRole ? (memberRole as 'owner' | 'admin' | 'member' | 'viewer') : null,
       }
     })
 
@@ -40,7 +40,7 @@ export const listAllUsers = adminQuery({
 
 export const createInvite = adminMutation({
   args: {
-    role: v.union(v.literal('admin'), v.literal('member')),
+    role: v.union(v.literal('admin'), v.literal('member'), v.literal('viewer')),
     email: v.optional(v.string()),
     ttlMinutes: v.optional(v.number()),
   },
@@ -95,7 +95,7 @@ export const acceptInvite = mutation({
 export const updateRole = adminMutation({
   args: {
     userId: v.string(),
-    role: v.union(v.literal('owner'), v.literal('admin'), v.literal('member')),
+    role: v.union(v.literal('owner'), v.literal('admin'), v.literal('member'), v.literal('viewer')),
   },
   handler: async (ctx, { userId, role }) => {
     const membership = await ctx.db
@@ -139,7 +139,7 @@ export const removeMember = adminMutation({
 export const addMember = adminMutation({
   args: {
     userId: v.string(),
-    role: v.union(v.literal('admin'), v.literal('member')),
+    role: v.union(v.literal('admin'), v.literal('member'), v.literal('viewer')),
   },
   returns: v.null(),
   handler: async (ctx, { userId, role }) => {

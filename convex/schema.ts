@@ -5,12 +5,12 @@ export default defineSchema({
   // Global membership (no workspaces)
   members: defineTable({
     userId: v.string(), // better-auth user id
-    role: v.union(v.literal('owner'), v.literal('admin'), v.literal('member')),
+    role: v.union(v.literal('owner'), v.literal('admin'), v.literal('member'), v.literal('viewer')),
   }).index('by_user', ['userId']),
   // Global invitations (no workspaces)
   invitations: defineTable({
     code: v.string(), // unique short token
-    role: v.union(v.literal('admin'), v.literal('member')),
+    role: v.union(v.literal('admin'), v.literal('member'), v.literal('viewer')),
     email: v.optional(v.string()),
     expiresAt: v.number(),
     createdBy: v.string(), // user id

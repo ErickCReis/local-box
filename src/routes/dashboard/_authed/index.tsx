@@ -5,7 +5,7 @@ import {
 } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 import { zodValidator } from '@tanstack/zod-adapter'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { toast } from 'sonner'
 import * as z from 'zod'
 import { api } from '@convex/_generated/api'
@@ -74,6 +74,8 @@ function RouteComponentContent() {
   const navigate = useNavigate()
   const acceptInvite = useMutation(api.members.acceptInvite)
   const [inviteProcessed, setInviteProcessed] = useState(false)
+  const user = useQuery(api.auth.getCurrentUser, {})
+  const isViewer = user?.role === 'viewer'
 
   // Handle invite acceptance for already-authenticated users
   useEffect(() => {
@@ -134,14 +136,16 @@ function RouteComponentContent() {
 
       <FileGrid
         extraStart={
-          <UploadArea
-            onFiles={addFiles}
-            // watchRef={pageRef}
-            accept="*/*"
-            multiple
-            title="Drag & drop files to upload"
-            description="or click to browse"
-          />
+          !isViewer ? (
+            <UploadArea
+              onFiles={addFiles}
+              // watchRef={pageRef}
+              accept="*/*"
+              multiple
+              title="Drag & drop files to upload"
+              description="or click to browse"
+            />
+          ) : null
         }
       />
 

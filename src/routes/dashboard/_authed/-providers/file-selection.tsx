@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { api } from '@convex/_generated/api'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { useFiles } from './files'
 import type { Id } from '@convex/_generated/dataModel'
 import type { PropsWithChildren } from 'react'
@@ -38,6 +38,8 @@ export function FileSelectionProvider({
   const deleteFile = useMutation(api.files.remove)
   const setFileTags = useMutation(api.files.setTags)
   const [bulkTagDialogOpen, setBulkTagDialogOpen] = useState(false)
+  const user = useQuery(api.auth.getCurrentUser, {})
+  const isViewer = user?.role === 'viewer'
 
   const toggleFileSelection = (fileId: Id<'files'>) => {
     const set = new Set(selectedFileIdsArray)
@@ -89,6 +91,7 @@ export function FileSelectionProvider({
   }, [files])
 
   const handleBulkDelete = async () => {
+    if (isViewer) return
     if (selectedFileIds.size === 0) return
     if (
       !confirm(
@@ -104,6 +107,7 @@ export function FileSelectionProvider({
   }
 
   const handleBulkAddTags = async (tagIdsToAdd: Array<Id<'tags'>>) => {
+    if (isViewer) return
     if (selectedFileIds.size === 0 || tagIdsToAdd.length === 0) return
 
     for (const fileId of selectedFileIds) {

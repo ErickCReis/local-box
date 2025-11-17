@@ -38,7 +38,7 @@ function MembersPage() {
 
   const inviteForm = useForm({
     defaultValues: {
-      role: 'member' as 'admin' | 'member',
+      role: 'member' as 'admin' | 'member' | 'viewer',
       email: '',
     },
     onSubmit: async ({ value }) => {
@@ -83,6 +83,7 @@ function MembersPage() {
                       <SelectContent>
                         <SelectItem value="member">Member</SelectItem>
                         <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="viewer">Viewer</SelectItem>
                       </SelectContent>
                     </Select>
                     {field.state.meta.errors.map((error, index) => (
@@ -188,6 +189,7 @@ function MembersPage() {
                       <SelectContent>
                         <SelectItem value="admin">Admin</SelectItem>
                         <SelectItem value="member">Member</SelectItem>
+                        <SelectItem value="viewer">Viewer</SelectItem>
                       </SelectContent>
                     </Select>
                   )}

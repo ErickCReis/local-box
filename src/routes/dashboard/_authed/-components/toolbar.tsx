@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { ListTreeIcon, Loader2Icon, Tag, Trash2Icon, X } from 'lucide-react'
-import { useMutation } from 'convex/react'
+import { useMutation, useQuery } from 'convex/react'
 import { api } from '@convex/_generated/api'
 import { TagCreateDialog } from './tag-create-dialog'
 import { BulkTagDialog } from './bulk-tag-dialog'
@@ -21,6 +21,8 @@ export function Toolbar() {
   const { hasActiveUploads, openUploads } = useUpload()
   const [newTagOpen, setNewTagOpen] = useState(false)
   const createTag = useMutation(api.tags.create)
+  const user = useQuery(api.auth.getCurrentUser, {})
+  const isViewer = user?.role === 'viewer'
 
   const handleCreateTag = async (name: string, color?: string) => {
     await createTag({ name, color })
@@ -28,7 +30,7 @@ export function Toolbar() {
 
   return (
     <div className="flex items-center gap-2">
-      {selectedFileIds.size > 0 && (
+      {selectedFileIds.size > 0 && !isViewer && (
         <>
           <span className="whitespace-nowrap px-3 py-1.5 rounded-md bg-primary/10 text-sm font-medium">
             {selectedFileIds.size} selected
@@ -62,27 +64,31 @@ export function Toolbar() {
           <div className="h-6 w-px bg-border" />
         </>
       )}
-      <Button
-        variant="outline"
-        size="icon"
-        aria-label="Open uploads"
-        onClick={openUploads}
-        title={hasActiveUploads ? 'Uploading…' : 'Open uploads'}
-      >
-        <div className="relative">
-          {hasActiveUploads ? (
-            <Loader2Icon className="animate-spin" />
-          ) : (
-            <ListTreeIcon />
-          )}
-          {hasActiveUploads && (
-            <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500" />
-          )}
-        </div>
-      </Button>
-      <Button variant="secondary" onClick={() => setNewTagOpen(true)}>
-        New Tag
-      </Button>
+      {!isViewer && (
+        <Button
+          variant="outline"
+          size="icon"
+          aria-label="Open uploads"
+          onClick={openUploads}
+          title={hasActiveUploads ? 'Uploading…' : 'Open uploads'}
+        >
+          <div className="relative">
+            {hasActiveUploads ? (
+              <Loader2Icon className="animate-spin" />
+            ) : (
+              <ListTreeIcon />
+            )}
+            {hasActiveUploads && (
+              <span className="absolute -top-0.5 -right-0.5 h-2 w-2 rounded-full bg-red-500" />
+            )}
+          </div>
+        </Button>
+      )}
+      {!isViewer && (
+        <Button variant="secondary" onClick={() => setNewTagOpen(true)}>
+          New Tag
+        </Button>
+      )}
       <TagCreateDialog
         open={newTagOpen}
         onOpenChange={setNewTagOpen}

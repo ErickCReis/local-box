@@ -212,6 +212,51 @@ export const memberAction = customAction(
   }),
 )
 
+// Custom functions for non-viewer access (blocks viewers from write operations)
+export const nonViewerMutation = customMutation(
+  mutation,
+  customCtx(async (ctx) => {
+    const { user, member } = await getUserAndMember(ctx)
+    if (member.role === 'viewer') {
+      throw new Error('Viewer role cannot perform write operations')
+    }
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      member: {
+        _id: member._id,
+        userId: member.userId,
+        role: member.role,
+      },
+    }
+  }),
+)
+
+export const nonViewerAction = customAction(
+  action,
+  customCtx(async (ctx) => {
+    const { user, member } = await getUserAndMemberAction(ctx)
+    if (member.role === 'viewer') {
+      throw new Error('Viewer role cannot perform write operations')
+    }
+    return {
+      user: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      member: {
+        _id: member._id,
+        userId: member.userId,
+        role: member.role,
+      },
+    }
+  }),
+)
+
 // Custom functions for admin access (admin or owner only)
 export const adminQuery = customQuery(
   query,

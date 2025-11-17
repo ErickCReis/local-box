@@ -2,12 +2,12 @@ import { v } from 'convex/values'
 import { paginationOptsValidator } from 'convex/server'
 import { getManyViaOrThrow } from 'convex-helpers/server/relationships'
 import { colorForTagName } from '../src/lib/tag-colors'
-import { memberAction, memberMutation, memberQuery } from './auth'
+import { memberAction, memberMutation, memberQuery, nonViewerAction, nonViewerMutation } from './auth'
 import { determineTagCategory } from './utils/tag_categories'
 import type { Id } from './_generated/dataModel'
 import type { MutationCtx } from './_generated/server'
 
-export const generateUploadUrl = memberAction({
+export const generateUploadUrl = nonViewerAction({
   args: {},
   handler: async (ctx) => {
     return await ctx.storage.generateUploadUrl()
@@ -74,7 +74,7 @@ async function getOrCreateSystemTag(
   })
 }
 
-export const saveUploadedFile = memberMutation({
+export const saveUploadedFile = nonViewerMutation({
   args: {
     storageId: v.id('_storage'),
     filename: v.string(),
@@ -337,7 +337,7 @@ export const getDownloadUrl = memberQuery({
   },
 })
 
-export const remove = memberMutation({
+export const remove = nonViewerMutation({
   args: { fileId: v.id('files') },
   handler: async (ctx, args) => {
     const file = await ctx.db.get(args.fileId)
@@ -358,7 +358,7 @@ export const remove = memberMutation({
   },
 })
 
-export const setTags = memberMutation({
+export const setTags = nonViewerMutation({
   args: {
     fileId: v.id('files'),
     tagIds: v.array(v.id('tags')),

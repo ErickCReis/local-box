@@ -51,6 +51,8 @@ export function UserMenu() {
         return 'default'
       case 'admin':
         return 'secondary'
+      case 'viewer':
+        return 'outline'
       default:
         return 'outline'
     }

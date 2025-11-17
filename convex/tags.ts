@@ -2,7 +2,7 @@ import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
 import { colorForTagName } from '../src/lib/tag-colors'
 import { internalMutation } from './_generated/server'
-import { adminMutation, memberMutation, memberQuery } from './auth'
+import { adminMutation, memberMutation, memberQuery, nonViewerMutation } from './auth'
 import { determineTagCategory, isSystemTagName } from './utils/tag_categories'
 
 export const list = memberQuery({
@@ -17,7 +17,7 @@ export const list = memberQuery({
   },
 })
 
-export const create = memberMutation({
+export const create = nonViewerMutation({
   args: {
     name: v.string(),
     color: v.optional(v.string()),
