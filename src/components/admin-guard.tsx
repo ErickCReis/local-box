@@ -3,6 +3,7 @@ import { Navigate } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { convexQuery } from '@convex-dev/react-query'
 import { useConvexAuth } from 'convex/react'
+import { MinimalLoading } from '@/components/minimal-loading'
 
 export function AdminGuard({ children }: { children: React.ReactNode }) {
   const convexAuth = useConvexAuth()
@@ -13,7 +14,7 @@ export function AdminGuard({ children }: { children: React.ReactNode }) {
   })
 
   if (convexAuth.isLoading || user === undefined) {
-    return <div>[AdminGuard] Loading...</div>
+    return <MinimalLoading />
   }
 
   if (user === null) {

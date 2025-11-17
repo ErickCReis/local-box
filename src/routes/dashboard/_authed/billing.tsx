@@ -1,6 +1,6 @@
 import { Link, createFileRoute } from '@tanstack/react-router'
 import { useCustomer } from 'autumn-js/react'
-import { CheckCircle2, CreditCard, Loader2, XCircle } from 'lucide-react'
+import { CheckCircle2, CreditCard, XCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Card,
@@ -10,6 +10,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { MinimalLoading } from '@/components/minimal-loading'
 
 export const Route = createFileRoute('/dashboard/_authed/billing')({
   component: BillingPage,
@@ -21,11 +22,7 @@ function BillingPage() {
   })
 
   if (!customer) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Loader2 className="h-6 w-6 animate-spin" />
-      </div>
-    )
+    return <MinimalLoading />
   }
 
   const activeSubscriptions = customer.products.filter(

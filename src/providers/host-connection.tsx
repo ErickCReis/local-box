@@ -5,10 +5,12 @@ import { convexClient } from '@convex-dev/better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react'
 import { ConvexBetterAuthProvider } from '@convex-dev/better-auth/react'
 import { AutumnProvider } from 'autumn-js/react'
+import { Link } from '@tanstack/react-router'
 import type { AuthClient } from '@convex-dev/better-auth/react'
 import type { QueryClient } from '@tanstack/react-query'
 import type { PropsWithChildren } from 'react'
 import { MinimalLoading } from '@/components/minimal-loading'
+import { Button } from '@/components/ui/button'
 
 type HostConnectionContextType =
   | {
@@ -52,7 +54,19 @@ export function HostConnectionProvider({
   }
 
   if (connection.state === 'disconnected') {
-    return <div>[HostConnectionProvider] Disconnected</div>
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6">
+        <div className="max-w-md w-full space-y-4 text-center">
+          <h1 className="text-xl font-semibold">Connect to a host</h1>
+          <p className="text-sm text-muted-foreground">
+            To use the dashboard, first connect to a Local Box host.
+          </p>
+          <Button asChild>
+            <Link to="/enter-host">Enter host URL</Link>
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
