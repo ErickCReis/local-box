@@ -30,39 +30,37 @@ function RouteComponent() {
 
   const form = useForm({
     defaultValues: {
-      email: 'a@a.com',
+      email: 'owner@test.com',
       password: '12345678',
     },
     onSubmit: async ({ value }) => {
-      await authClient.signIn
-        .email({
-          email: value.email,
-          password: value.password,
-          fetchOptions: {
-            onSuccess: async () => {
-              // Accept invite if present
-              if (invite) {
-                try {
-                  await acceptInvite({ code: invite })
-                  toast.success('Invite accepted successfully')
-                } catch (error) {
-                  toast.error(
-                    error instanceof Error
-                      ? error.message
-                      : 'Failed to accept invite',
-                  )
-                }
+      console.log('signing in with email', value.email)
+      await authClient.signIn.email({
+        email: value.email,
+        password: value.password,
+        fetchOptions: {
+          onSuccess: async () => {
+            // Accept invite if present
+            if (invite) {
+              try {
+                await acceptInvite({ code: invite })
+                toast.success('Invite accepted successfully')
+              } catch (error) {
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : 'Failed to accept invite',
+                )
               }
-              toast.success('Sign in successful')
-            },
-            onError: (error) => {
-              toast.error(error.error.message || error.error.statusText)
-            },
+            }
+            toast.success('Sign in successful')
+            navigate({ to: '/dashboard', search: {} })
           },
-        })
-        .then(() => {
-          navigate({ to: '/dashboard', search: {} })
-        })
+          onError: (error) => {
+            toast.error(error.error.message || error.error.statusText)
+          },
+        },
+      })
     },
     validators: {
       onSubmit: z.object({
